@@ -28,6 +28,8 @@ jobs:
         go test -race -covermode atomic -coverprofile=covprofile ./...
 
     - name: Install goveralls
+      env:
+          GO111MODULE: off
       run: go get github.com/mattn/goveralls
 
     - name: Send coverage
