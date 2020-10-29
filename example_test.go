@@ -1,15 +1,13 @@
-package gohttp_test
+package gohttp
 
 import (
 	"fmt"
 	"log"
 	"net/url"
-
-	"github.com/sunshineplan/gohttp"
 )
 
 func Example() {
-	r := gohttp.Post("https://httpbin.org/post", nil, url.Values{"hello": []string{"world"}})
+	r := Post("https://httpbin.org/post", nil, url.Values{"hello": []string{"world"}})
 	var postResp struct {
 		Form struct{ Hello string }
 	}
@@ -21,7 +19,7 @@ func Example() {
 }
 
 func ExampleSession() {
-	s := gohttp.NewSession()
+	s := NewSession()
 	s.Header.Set("hello", "world")
 	s.Get("https://httpbin.org/cookies/set/name/value", nil)
 	r := s.Get("https://httpbin.org/get", nil)
