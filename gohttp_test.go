@@ -50,7 +50,11 @@ func TestJSON(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
-	r := &Response{Body: errReader(0)}
+	r := &Response{Error: errors.New("test")}
+	if b := r.Bytes(); b != nil {
+		t.Error("gave non nil bytes; want nil")
+	}
+	r = &Response{Body: errReader(0)}
 	if b := r.Bytes(); b != nil {
 		t.Error("gave non nil bytes; want nil")
 	}
