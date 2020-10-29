@@ -16,21 +16,30 @@ jobs:
       with:
         go-version: '1.x'
 
-    - name: Check out code
-      uses: actions/checkout@v2
+    - name: Set up GOPATH
+        run: |
+          echo "GOPATH=${{ github.workspace }}" >> "$GITHUB_ENV"
+          echo "${{ github.workspace }}/bin" >> "$GITHUB_PATH"
 
-    - name: Install dependencies
-      run: |
-        go get golang.org/x/net/publicsuffix
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: src/github.com/sunshineplan/gohttp
 
-    - name: Run Unit tests
-      run: |
-        go test -v -race -cover ./...
+      - name: Install dependencies
+        run: |
+          go get golang.org/x/net/publicsuffix
 
-    - name: Install goveralls
-      run: go get github.com/mattn/goveralls
+      - name: Run Unit tests
+        run: |
+          go test -race -covermode atomic -coverprofile=covprofile ./...
+        working-directory: src/github.com/sunshineplan/gohttp
 
-    - name: Send coverage
-      env:
-        COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: goveralls -service=github
+      - name: Install goveralls
+        run: go get github.com/mattn/goveralls
+
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=covprofile -service=github
+        working-directory: src/github.com/sunshineplan/gohttp
