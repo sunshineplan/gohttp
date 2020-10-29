@@ -1,14 +1,14 @@
 # GoHTTP
 
 [![GoDev](https://img.shields.io/static/v1?label=godev&message=reference&color=00add8)][godev]
-[![BuildStatus](https://travis-ci.org/sunshineplan/gohttp.svg?branch=main)][travis]
+[![Go](https://github.com/sunshineplan/gohttp/workflows/Test/badge.svg)][actions]
 [![CoverageStatus](https://coveralls.io/repos/github/sunshineplan/gohttp/badge.svg?branch=main&service=github)][coveralls]
 [![GoReportCard](https://goreportcard.com/badge/github.com/sunshineplan/gohttp)][goreportcard]
 
-[godev]: https://pkg.go.dev/github.com/sunshineplan/gohttp
-[travis]: https://travis-ci.org/sunshineplan/gohttp
-[coveralls]: https://coveralls.io/github/sunshineplan/gohttp?branch=main
-[goreportcard]: https://goreportcard.com/report/github.com/sunshineplan/gohttp
+[godev]: https://pkg.go.dev/github.com/sunshineplan/gohttp "GoDev"
+[actions]: https://github.com/sunshineplan/gohttp/actions "GitHub Actions Page"
+[coveralls]: https://coveralls.io/github/sunshineplan/gohttp?branch=main "Coverage Status"
+[goreportcard]: https://goreportcard.com/report/github.com/sunshineplan/gohttp "Go Report Card"
 
 Package GoHTTP is an elegant and simple HTTP library for Go.
 
