@@ -18,6 +18,13 @@ func TestBuildRequest(t *testing.T) {
 	if _, err := buildRequest("bad method", "", make(chan int)); err == nil {
 		t.Error("gave nil error; want error")
 	}
+	r, err := buildRequest("", "", bytes.NewBufferString("test"))
+	if err != nil {
+		t.Error(err)
+	}
+	if b, _ := ioutil.ReadAll(r.Body); string(b) != "test" {
+		t.Errorf("expected request body %q; got %q", "test", string(b))
+	}
 }
 
 func TestDoRequest(t *testing.T) {
