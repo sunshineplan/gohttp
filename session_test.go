@@ -47,7 +47,7 @@ func TestSession(t *testing.T) {
 		t.Errorf("expected cookie %q; got %q", "two=second", c)
 	}
 
-	resp = s.Head(ts.URL, nil)
+	resp = s.Head(ts.URL, H{"another": "header"})
 	if resp.Error != nil {
 		t.Error(resp.Error)
 	}
@@ -59,7 +59,7 @@ func TestSession(t *testing.T) {
 		t.Errorf("expected cookies number %d; got %d", 3, len(c))
 	}
 
-	resp = s.Post(ts.URL, nil, bytes.NewBufferString("Hello, world!"))
+	resp = s.Post(ts.URL, H{"another": "header"}, bytes.NewBufferString("Hello, world!"))
 	if resp.Error != nil {
 		t.Error(resp.Error)
 	}
