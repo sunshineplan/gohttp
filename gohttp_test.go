@@ -1,36 +1,32 @@
 package gohttp
 
 import (
+	"errors"
 	"net/url"
 	"testing"
 )
 
-func TestGoHTTP(t *testing.T) {
-	r := Post("https://httpbin.org/post", nil, url.Values{"hello": []string{"world"}})
-	var postResp struct {
-		Form struct{ Hello string }
+func TestBuildResponse(t *testing.T) {
+	r := buildResponse(nil, errors.New("test"))
+	if err := r.JSON(nil); err == nil {
+		t.Error("gave nil error; want error")
 	}
-	if err := r.JSON(&postResp); err != nil {
-		t.Error(err)
+	if b := r.Bytes(); b != nil {
+		t.Error("gave non nil bytes; want nil")
 	}
-	if h := postResp.Form.Hello; h != "world" {
-		t.Errorf("expected %q; got %q", "world", h)
-	}
+}
 
-	s := NewSession()
-	s.Header.Set("hello", "world")
-	s.Get("https://httpbin.org/cookies/set/name/value", nil)
-	r = s.Get("https://httpbin.org/get", nil)
-	var getResp struct {
-		Headers struct{ Hello, Cookie string }
+func TestBuildRequest(t *testing.T) {
+	if _, err := buildRequest("bad method", "", url.Values{}); err == nil {
+		t.Error("gave nil error; want error")
 	}
-	if err := r.JSON(&getResp); err != nil {
-		t.Error(err)
+	if _, err := buildRequest("bad method", "", "test"); err == nil {
+		t.Error("gave nil error; want error")
 	}
-	if h := getResp.Headers.Hello; h != "world" {
-		t.Errorf("expected %q; got %q", "world", h)
-	}
-	if h := getResp.Headers.Cookie; h != "name=value" {
-		t.Errorf("expected %q; got %q", "name=value", h)
+}
+
+func TestDoRequest(t *testing.T) {
+	if r := doRequest("bad method", "", nil, nil, nil); r.Error == nil {
+		t.Error("gave nil error; want error")
 	}
 }

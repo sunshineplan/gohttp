@@ -85,7 +85,7 @@ func TestPost(t *testing.T) {
 		t.Errorf("expected Content-Type header %q; got %q", "application/x-www-form-urlencoded", ct)
 	}
 	if s := resp.String(); s != "test=test" {
-		t.Error("Incorrect response body:", s)
+		t.Errorf("expected response body %q; got %q", "test=test", s)
 	}
 
 	resp = Post(ts.URL, nil, map[string]interface{}{"test": "test"})

@@ -13,12 +13,10 @@ import (
 var defaultAgent = "Chrome"
 var defaultClient = &http.Client{Transport: &http.Transport{Proxy: nil}}
 
-// H represents the key-value pairs in an HTTP header
-// map[string]string
-type H headers
-type headers map[string]string
+// H represents the key-value pairs in an HTTP header.
+type H map[string]string
 
-// SetAgent set default user agent string
+// SetAgent sets default user agent string.
 func SetAgent(agent string) {
 	if agent != "" {
 		defaultAgent = agent
@@ -29,6 +27,8 @@ func buildRequest(method, URL string, data interface{}) (*http.Request, error) {
 	switch data.(type) {
 	case nil:
 		return http.NewRequest(method, URL, nil)
+	case io.Reader:
+		return http.NewRequest(method, URL, data.(io.Reader))
 	case url.Values:
 		req, err := http.NewRequest(method, URL, strings.NewReader(data.(url.Values).Encode()))
 		if err != nil {
@@ -62,7 +62,7 @@ func doRequest(method, url string, header http.Header, data interface{}, client 
 	return buildResponse(client.Do(req))
 }
 
-// Response after request
+// Response represents the response from an HTTP request.
 type Response struct {
 	Error      error
 	Body       io.ReadCloser
@@ -86,14 +86,15 @@ func buildResponse(resp *http.Response, err error) *Response {
 	}
 }
 
-// Close response body
+// Close closes the response body.
 func (r *Response) Close() {
 	if r.Error == nil {
 		r.Body.Close()
 	}
 }
 
-// JSON unmarshal response body to data
+// JSON parses the response body as JSON-encoded data
+// and stores the result in the value pointed to by data.
 func (r *Response) JSON(data interface{}) error {
 	if r.Error != nil {
 		return r.Error
@@ -109,7 +110,7 @@ func (r *Response) JSON(data interface{}) error {
 	return nil
 }
 
-// Bytes return response bytes
+// Bytes returns a slice of byte of the response body.
 func (r *Response) Bytes() []byte {
 	if r.Error != nil {
 		return nil
@@ -122,7 +123,7 @@ func (r *Response) Bytes() []byte {
 	return body
 }
 
-// String return response string
+// String returns the contents of the response body as a string.
 func (r *Response) String() string {
 	return string(r.Bytes())
 }

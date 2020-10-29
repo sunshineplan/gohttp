@@ -8,13 +8,13 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-// Session contains http.Client and http.Header
+// Session provides cookie persistence and configuration.
 type Session struct {
 	client *http.Client
 	Header http.Header
 }
 
-// NewSession return a Session with default setting
+// NewSession creates and initializes a new Session using initial contents.
 func NewSession() *Session {
 	jar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	return &Session{
@@ -26,7 +26,7 @@ func NewSession() *Session {
 	}
 }
 
-// SetProxy sets Session client transport proxy
+// SetProxy sets Session client transport proxy.
 func (s *Session) SetProxy(proxy string) error {
 	proxyURL, err := url.Parse(proxy)
 	if err != nil {
@@ -36,22 +36,22 @@ func (s *Session) SetProxy(proxy string) error {
 	return nil
 }
 
-// Cookies returns the cookies to send in a request for the given URL
+// Cookies returns the cookies to send in a request for the given URL.
 func (s *Session) Cookies(u *url.URL) []*http.Cookie {
 	return s.client.Jar.Cookies(u)
 }
 
-// SetCookie handles the receipt of the cookie in a reply for the given URL
+// SetCookie handles the receipt of the cookie in a reply for the given URL.
 func (s *Session) SetCookie(u *url.URL, name, value string) {
 	s.SetCookies(u, []*http.Cookie{&http.Cookie{Name: name, Value: value}})
 }
 
-// SetCookies handles the receipt of the cookies in a reply for the given URL
+// SetCookies handles the receipt of the cookies in a reply for the given URL.
 func (s *Session) SetCookies(u *url.URL, cookies []*http.Cookie) {
 	s.client.Jar.SetCookies(u, cookies)
 }
 
-// Get does Session get
+// Get issues a session GET to the specified URL with additional headers.
 func (s *Session) Get(url string, headers H) *Response {
 	for k, v := range headers {
 		s.Header.Set(k, v)
@@ -59,7 +59,7 @@ func (s *Session) Get(url string, headers H) *Response {
 	return doRequest("GET", url, s.Header, nil, s.client)
 }
 
-// Head does Session head
+// Head issues a session HEAD to the specified URL with additional headers.
 func (s *Session) Head(url string, headers H) *Response {
 	for k, v := range headers {
 		s.Header.Set(k, v)
@@ -67,7 +67,7 @@ func (s *Session) Head(url string, headers H) *Response {
 	return doRequest("HEAD", url, s.Header, nil, s.client)
 }
 
-// Post does Session post
+// Post issues a session POST to the specified URL with additional headers.
 func (s *Session) Post(url string, headers H, data interface{}) *Response {
 	for k, v := range headers {
 		s.Header.Set(k, v)

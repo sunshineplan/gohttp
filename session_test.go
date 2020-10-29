@@ -1,7 +1,9 @@
 package gohttp
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,7 +13,8 @@ import (
 func TestSession(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: "hello", Value: "world"})
-		fmt.Fprint(w, "Hello, world!")
+		c, _ := ioutil.ReadAll(r.Body)
+		fmt.Fprint(w, string(c))
 	}))
 	defer ts.Close()
 	tsURL, _ := url.Parse(ts.URL)
@@ -25,6 +28,9 @@ func TestSession(t *testing.T) {
 		t.Error(resp.Error)
 	}
 	defer resp.Close()
+	if resp.Request.Method != "GET" {
+		t.Errorf("expected method %q; got %q", "GET", resp.Request.Method)
+	}
 	if h := resp.Request.Header.Get("hello"); h != "world" {
 		t.Errorf("expected hello header %q; got %q", "world", h)
 	}
@@ -41,12 +47,37 @@ func TestSession(t *testing.T) {
 		t.Errorf("expected cookie %q; got %q", "two=second", c)
 	}
 
-	resp = s.Get(ts.URL, nil)
+	resp = s.Head(ts.URL, nil)
 	if resp.Error != nil {
 		t.Error(resp.Error)
 	}
+	if resp.Request.Method != "HEAD" {
+		t.Errorf("expected method %q; got %q", "HEAD", resp.Request.Method)
+	}
 	defer resp.Close()
-	if c, _ := resp.Request.Cookie("hello"); c.String() != "hello=world" {
-		t.Errorf("expected cookie %q; got %q", "hello=world", c)
+	if c := s.Cookies(resp.Request.URL); len(c) != 3 {
+		t.Errorf("expected cookies number %d; got %d", 3, len(c))
+	}
+
+	resp = s.Post(ts.URL, nil, bytes.NewBufferString("Hello, world!"))
+	if resp.Error != nil {
+		t.Error(resp.Error)
+	}
+	if resp.Request.Method != "POST" {
+		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
+	}
+	defer resp.Close()
+	if s := resp.String(); s != "Hello, world!" {
+		t.Errorf("expected response body %q; got %q", "Hello, world!", s)
+	}
+}
+
+func TestSetProxy(t *testing.T) {
+	s := NewSession()
+	if err := s.SetProxy("http://localhost"); err != nil {
+		t.Error(err)
+	}
+	if err := s.SetProxy("://localhost"); err == nil {
+		t.Error("gave nil error; want some error")
 	}
 }

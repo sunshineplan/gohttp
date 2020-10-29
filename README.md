@@ -37,10 +37,9 @@ fmt.Print(r.StatusCode) // 200
 fmt.Print(r.Header.Get("content-type")) // application/json; charset=utf-8
 fmt.Print(r.String()) // {"type":"User"...
 
+// HTTP POST request
 r = gohttp.Post("https://httpbin.org/post", nil, url.Values{"hello": []string{"world"}})
-var data struct {
-	Form struct{ Hello string }
-}
+var data struct { Form struct{ Hello string } }
 r.JSON(&data)
 fmt.Println(data.Form.Hello)  // world
 ```
@@ -53,9 +52,7 @@ s := NewSession()
 s.Header.Set("hello", "world")
 s.Get("https://httpbin.org/cookies/set/name/value", nil)
 r := s.Get("https://httpbin.org/get", nil)
-var data struct {
-	Headers struct{ Hello, Cookie string }
-}
+var data struct { Headers struct{ Hello, Cookie string } }
 r.JSON(&data)
 fmt.Println(data.Headers.Hello)  // world
 fmt.Println(data.Headers.Cookie) // name=value
