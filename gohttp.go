@@ -2,6 +2,8 @@ package gohttp
 
 import (
 	"bytes"
+	"compress/flate"
+	"compress/gzip"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -56,6 +58,7 @@ func doRequest(method, url string, header http.Header, data interface{}, client 
 		return &Response{Error: err}
 	}
 	req.Header.Set("User-Agent", defaultAgent)
+	req.Header.Set("Accept-Encoding", "gzip, deflate")
 	for k, v := range header {
 		req.Header[k] = v
 	}
@@ -99,12 +102,7 @@ func (r *Response) JSON(data interface{}) error {
 	if r.Error != nil {
 		return r.Error
 	}
-	defer r.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(body, &data); err != nil {
+	if err := json.Unmarshal(r.Bytes(), &data); err != nil {
 		return err
 	}
 	return nil
@@ -116,7 +114,20 @@ func (r *Response) Bytes() []byte {
 		return nil
 	}
 	defer r.Close()
-	body, err := ioutil.ReadAll(r.Body)
+
+	reader := r.Body
+	switch r.Header.Get("Content-Encoding") {
+	case "gzip":
+		var err error
+		reader, err = gzip.NewReader(reader)
+		if err != nil {
+			return nil
+		}
+	case "deflate":
+		reader = flate.NewReader(reader)
+	}
+
+	body, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return nil
 	}
