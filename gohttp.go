@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -17,6 +18,15 @@ var defaultClient = &http.Client{Transport: &http.Transport{Proxy: nil}}
 
 // H represents the key-value pairs in an HTTP header.
 type H map[string]string
+
+func defaultHeaders() H {
+	return H{
+		"User-Agent":      defaultAgent,
+		"Accept-Encoding": "gzip, deflate",
+		"Accept":          "*/*",
+		"Connection":      "keep-alive",
+	}
+}
 
 // SetAgent sets default user agent string.
 func SetAgent(agent string) {
@@ -57,8 +67,9 @@ func doRequest(method, url string, header http.Header, data interface{}, client 
 	if err != nil {
 		return &Response{Error: err}
 	}
-	req.Header.Set("User-Agent", defaultAgent)
-	req.Header.Set("Accept-Encoding", "gzip, deflate")
+	for k, v := range defaultHeaders() {
+		req.Header.Set(k, v)
+	}
 	for k, v := range header {
 		req.Header[k] = v
 	}
@@ -73,6 +84,8 @@ type Response struct {
 	Header     http.Header
 	Cookies    []*http.Cookie
 	Request    *http.Request
+	cached     bool
+	bytes      []byte
 }
 
 func buildResponse(resp *http.Response, err error) *Response {
@@ -96,22 +109,13 @@ func (r *Response) Close() {
 	}
 }
 
-// JSON parses the response body as JSON-encoded data
-// and stores the result in the value pointed to by data.
-func (r *Response) JSON(data interface{}) error {
-	if r.Error != nil {
-		return r.Error
-	}
-	if err := json.Unmarshal(r.Bytes(), &data); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Bytes returns a slice of byte of the response body.
 func (r *Response) Bytes() []byte {
 	if r.Error != nil {
 		return nil
+	}
+	if r.cached {
+		return r.bytes
 	}
 	defer r.Close()
 
@@ -131,10 +135,38 @@ func (r *Response) Bytes() []byte {
 	if err != nil {
 		return nil
 	}
-	return body
+	r.bytes = body
+	r.cached = true
+	return r.bytes
 }
 
 // String returns the contents of the response body as a string.
 func (r *Response) String() string {
 	return string(r.Bytes())
+}
+
+// JSON parses the response body as JSON-encoded data
+// and stores the result in the value pointed to by data.
+func (r *Response) JSON(data interface{}) error {
+	if r.Error != nil {
+		return r.Error
+	}
+	if err := json.Unmarshal(r.Bytes(), &data); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Save saves the response data to file.
+func (r *Response) Save(file string) error {
+	if r.Error != nil {
+		return r.Error
+	}
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.Write(r.Bytes())
+	return nil
 }
