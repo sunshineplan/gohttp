@@ -41,14 +41,26 @@ fmt.Print(r.String()) // {"type":"User"...
 r = gohttp.Post("https://httpbin.org/post", nil, url.Values{"hello": []string{"world"}})
 var data struct { Form struct{ Hello string } }
 r.JSON(&data)
-fmt.Println(data.Form.Hello)  // world
+fmt.Println(data.Form.Hello) // world
+
+// Upload File
+r := gohttp.Upload("https://httpbin.org/post", nil, nil, gohttp.F("readme", "README.md"))
+var resp struct {
+    Files   struct{ Readme string }
+    Headers struct {
+        ContentType string `json:"Content-Type"`
+    }
+}
+r.JSON(&resp)
+fmt.Println(strings.Split(resp.Files.Readme, "\r\n")[0])     // # GoHTTP
+fmt.Println(strings.Split(resp.Headers.ContentType, ";")[0]) // multipart/form-data
 ```
 
 ### Session
 
 ```go
 // Session provides cookie persistence and configuration
-s := NewSession()
+s := gohttp.NewSession()
 s.Header.Set("hello", "world")
 s.Get("https://httpbin.org/cookies/set/name/value", nil)
 r := s.Get("https://httpbin.org/get", nil)

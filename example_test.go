@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"strings"
 )
 
 func Example() {
@@ -16,6 +17,24 @@ func Example() {
 	}
 	fmt.Println(postResp.Form.Hello)
 	// Output: world
+}
+
+func ExampleUpload() {
+	r := Upload("https://httpbin.org/post", nil, nil, F("readme", "README.md"))
+	var resp struct {
+		Files   struct{ Readme string }
+		Headers struct {
+			ContentType string `json:"Content-Type"`
+		}
+	}
+	if err := r.JSON(&resp); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(strings.Split(resp.Files.Readme, "\r\n")[0])
+	fmt.Println(strings.Split(resp.Headers.ContentType, ";")[0])
+	// Output:
+	// # GoHTTP
+	// multipart/form-data
 }
 
 func ExampleSession() {
