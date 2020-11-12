@@ -30,10 +30,8 @@ func ExampleUpload() {
 	if err := r.JSON(&resp); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(strings.Split(resp.Files.Readme, "\r\n")[0])
 	fmt.Println(strings.Split(resp.Headers.ContentType, ";")[0])
 	// Output:
-	// # GoHTTP
 	// multipart/form-data
 }
 
