@@ -3,10 +3,15 @@ package gohttp
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -59,16 +64,66 @@ func TestSession(t *testing.T) {
 		t.Errorf("expected cookies number %d; got %d", 3, len(c))
 	}
 
-	resp = s.Post(ts.URL, H{"another": "header"}, bytes.NewBufferString("Hello, world!"))
+	resp = s.Post(ts.URL, H{"post": "header"}, bytes.NewBufferString("Hello, world!"))
 	if resp.Error != nil {
 		t.Error(resp.Error)
 	}
 	if resp.Request.Method != "POST" {
 		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
 	}
-	defer resp.Close()
 	if s := resp.String(); s != "Hello, world!" {
 		t.Errorf("expected response body %q; got %q", "Hello, world!", s)
+	}
+
+	resp = s.Upload(ts.URL, nil, nil, &File{ReadCloser: errReader(0)})
+	if resp.Error == nil {
+		t.Error("gave nil error; want error")
+	}
+	f, _ := ioutil.TempFile("", "test")
+	f.WriteString("tempfile")
+	f.Close()
+	defer os.Remove(f.Name())
+	resp = s.Upload(ts.URL, H{"upload": "header"}, map[string]string{"param": "test"}, F("file1", f.Name()), nil, F("file2", f.Name()))
+	if resp.Error != nil {
+		t.Error(resp.Error)
+	}
+	if resp.Request.Method != "POST" {
+		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
+	}
+	_, params, err := mime.ParseMediaType(resp.Request.Header.Get("Content-Type"))
+	if err != nil {
+		t.Error(err)
+	}
+	mr := multipart.NewReader(resp.Body, params["boundary"])
+	for {
+		p, err := mr.NextPart()
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			t.Error(err)
+		}
+		switch p.FormName() {
+		case "param":
+			b, err := ioutil.ReadAll(p)
+			if err != nil {
+				t.Error(err)
+			}
+			if s := string(b); s != "test" {
+				t.Errorf("expected %q; got %q", "test", s)
+			}
+		case "file1", "file2":
+			if fn := p.FileName(); fn != filepath.Base(f.Name()) {
+				t.Errorf("expected %q; got %q", filepath.Base(f.Name()), fn)
+			}
+			b, err := ioutil.ReadAll(p)
+			if err != nil {
+				t.Error(err)
+			}
+			if s := string(b); s != "tempfile" {
+				t.Errorf("expected %q; got %q", "tempfile", s)
+			}
+		}
 	}
 }
 

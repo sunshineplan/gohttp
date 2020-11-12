@@ -74,3 +74,16 @@ func (s *Session) Post(url string, headers H, data interface{}) *Response {
 	}
 	return doRequest("POST", url, s.Header, data, s.client)
 }
+
+// Upload issues a session POST to the specified URL with a multipart document and additional headers.
+func (s *Session) Upload(url string, headers H, params map[string]string, files ...*File) *Response {
+	r, contentType, err := buildMultipart(params, files...)
+	if err != nil {
+		return &Response{Error: err}
+	}
+	s.Header.Add("Content-Type", contentType)
+	for k, v := range headers {
+		s.Header.Set(k, v)
+	}
+	return doRequest("POST", url, s.Header, r, s.client)
+}
