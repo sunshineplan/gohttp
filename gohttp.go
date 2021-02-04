@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-var defaultAgent = "Chrome"
+var defaultAgent = "Go-http-client"
 var defaultClient = &http.Client{Transport: &http.Transport{Proxy: nil}}
 
 // H represents the key-value pairs in an HTTP header.

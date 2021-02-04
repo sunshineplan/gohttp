@@ -28,8 +28,8 @@ func TestGetAndHead(t *testing.T) {
 	if h := resp.Request.Header.Get("hello"); h != "world" {
 		t.Errorf("expected hello header %q; got %q", "world", h)
 	}
-	if ua := resp.Request.Header.Get("user-agent"); ua != "Chrome" {
-		t.Errorf("expected user agent %q; got %q", "Chrome", ua)
+	if ua := resp.Request.Header.Get("user-agent"); ua != "Go-http-client" {
+		t.Errorf("expected user agent %q; got %q", "Go-http-client", ua)
 	}
 	if s := resp.String(); s != "Hello, world!" {
 		t.Error("Incorrect get response body:", s)

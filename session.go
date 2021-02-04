@@ -43,7 +43,7 @@ func (s *Session) Cookies(u *url.URL) []*http.Cookie {
 
 // SetCookie handles the receipt of the cookie in a reply for the given URL.
 func (s *Session) SetCookie(u *url.URL, name, value string) {
-	s.SetCookies(u, []*http.Cookie{&http.Cookie{Name: name, Value: value}})
+	s.SetCookies(u, []*http.Cookie{{Name: name, Value: value}})
 }
 
 // SetCookies handles the receipt of the cookies in a reply for the given URL.
