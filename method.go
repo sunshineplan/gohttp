@@ -13,6 +13,7 @@ func GetWithClient(url string, headers H, client *http.Client) *Response {
 	for k, v := range headers {
 		h.Set(k, v)
 	}
+
 	return doRequest("GET", url, h, nil, client)
 }
 
@@ -27,6 +28,7 @@ func HeadWithClient(url string, headers H, client *http.Client) *Response {
 	for k, v := range headers {
 		h.Set(k, v)
 	}
+
 	return doRequest("HEAD", url, h, nil, client)
 }
 
@@ -42,5 +44,6 @@ func PostWithClient(url string, headers H, data interface{}, client *http.Client
 	for k, v := range headers {
 		h.Set(k, v)
 	}
+
 	return doRequest("POST", url, h, data, client)
 }

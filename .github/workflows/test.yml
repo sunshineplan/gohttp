@@ -11,20 +11,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ windows-latest, ubuntu-latest, macos-latest ]
     steps:
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '1.x'
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.x'
 
-    - name: Check out code
-      uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
 
-    - name: Install dependencies
-      run: |
-        go get golang.org/x/net/publicsuffix
-
-    - name: Run Unit tests
-      run: |
-        go test -v -race ./...
+      - name: Run Unit tests
+        run: |
+          go mod download
+          go test -v -race ./...

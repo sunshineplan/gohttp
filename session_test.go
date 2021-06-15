@@ -18,7 +18,7 @@ import (
 func TestSession(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: "hello", Value: "world"})
-		c, _ := ioutil.ReadAll(r.Body)
+		c, _ := io.ReadAll(r.Body)
 		fmt.Fprint(w, string(c))
 	}))
 	defer ts.Close()
@@ -105,7 +105,7 @@ func TestSession(t *testing.T) {
 		}
 		switch p.FormName() {
 		case "param":
-			b, err := ioutil.ReadAll(p)
+			b, err := io.ReadAll(p)
 			if err != nil {
 				t.Error(err)
 			}
@@ -116,7 +116,7 @@ func TestSession(t *testing.T) {
 			if fn := p.FileName(); fn != filepath.Base(f.Name()) {
 				t.Errorf("expected %q; got %q", filepath.Base(f.Name()), fn)
 			}
-			b, err := ioutil.ReadAll(p)
+			b, err := io.ReadAll(p)
 			if err != nil {
 				t.Error(err)
 			}

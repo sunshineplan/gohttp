@@ -2,7 +2,7 @@ package gohttp
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -49,7 +49,7 @@ func TestGetAndHead(t *testing.T) {
 
 func TestPost(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, _ := ioutil.ReadAll(r.Body)
+		c, _ := io.ReadAll(r.Body)
 		fmt.Fprint(w, string(c))
 	}))
 	defer ts.Close()

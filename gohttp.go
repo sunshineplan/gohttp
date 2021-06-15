@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -36,28 +35,34 @@ func SetAgent(agent string) {
 }
 
 func buildRequest(method, URL string, data interface{}) (*http.Request, error) {
-	switch data.(type) {
+	switch data := data.(type) {
 	case nil:
 		return http.NewRequest(method, URL, nil)
+
 	case io.Reader:
-		return http.NewRequest(method, URL, data.(io.Reader))
+		return http.NewRequest(method, URL, data)
+
 	case url.Values:
-		req, err := http.NewRequest(method, URL, strings.NewReader(data.(url.Values).Encode()))
+		req, err := http.NewRequest(method, URL, strings.NewReader(data.Encode()))
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 		return req, nil
+
 	default:
 		jsonData, err := json.Marshal(data)
 		if err != nil {
 			return nil, err
 		}
+
 		req, err := http.NewRequest(method, URL, bytes.NewBuffer(jsonData))
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
+
 		return req, nil
 	}
 }
@@ -67,12 +72,15 @@ func doRequest(method, url string, header http.Header, data interface{}, client 
 	if err != nil {
 		return &Response{Error: err}
 	}
+
 	for k, v := range defaultHeaders() {
 		req.Header.Set(k, v)
 	}
+
 	for k, v := range header {
 		req.Header[k] = v
 	}
+
 	return buildResponse(client.Do(req))
 }
 
@@ -84,6 +92,7 @@ type Response struct {
 	Header     http.Header
 	Cookies    []*http.Cookie
 	Request    *http.Request
+	Response   *http.Response
 	cached     bool
 	bytes      []byte
 }
@@ -92,6 +101,7 @@ func buildResponse(resp *http.Response, err error) *Response {
 	if err != nil {
 		return &Response{Error: err}
 	}
+
 	return &Response{
 		Error:      nil,
 		Body:       resp.Body,
@@ -99,6 +109,7 @@ func buildResponse(resp *http.Response, err error) *Response {
 		Header:     resp.Header,
 		Cookies:    resp.Cookies(),
 		Request:    resp.Request,
+		Response:   resp,
 	}
 }
 
@@ -131,12 +142,13 @@ func (r *Response) Bytes() []byte {
 		reader = flate.NewReader(reader)
 	}
 
-	body, err := ioutil.ReadAll(reader)
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		return nil
 	}
 	r.bytes = body
 	r.cached = true
+
 	return r.bytes
 }
 
@@ -151,10 +163,8 @@ func (r *Response) JSON(data interface{}) error {
 	if r.Error != nil {
 		return r.Error
 	}
-	if err := json.Unmarshal(r.Bytes(), &data); err != nil {
-		return err
-	}
-	return nil
+
+	return json.Unmarshal(r.Bytes(), &data)
 }
 
 // Save saves the response data to file.
@@ -162,11 +172,14 @@ func (r *Response) Save(file string) error {
 	if r.Error != nil {
 		return r.Error
 	}
+
 	f, err := os.Create(file)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	f.Write(r.Bytes())
-	return nil
+
+	_, err = f.Write(r.Bytes())
+
+	return err
 }

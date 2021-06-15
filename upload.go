@@ -22,6 +22,7 @@ func F(fieldname, filename string) *File {
 	if err != nil {
 		panic(err)
 	}
+
 	return &File{
 		ReadCloser: f,
 		Fieldname:  fieldname,
@@ -39,6 +40,7 @@ func buildMultipart(params map[string]string, files ...*File) (io.Reader, string
 			continue
 		}
 		defer file.Close()
+
 		part, _ := w.CreateFormFile(file.Fieldname, file.Filename)
 		if _, err := io.Copy(part, file); err != nil {
 			return nil, "", err
@@ -64,8 +66,10 @@ func UploadWithClient(url string, headers H, params map[string]string, files []*
 		return &Response{Error: err}
 	}
 	h := H{"Content-Type": contentType}
+
 	for k, v := range headers {
 		h[k] = v
 	}
+
 	return PostWithClient(url, h, r, defaultClient)
 }

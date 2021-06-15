@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -26,7 +27,7 @@ func TestBuildRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if b, _ := ioutil.ReadAll(r.Body); string(b) != "test" {
+	if b, _ := io.ReadAll(r.Body); string(b) != "test" {
 		t.Errorf("expected request body %q; got %q", "test", string(b))
 	}
 }
@@ -66,7 +67,7 @@ func TestBytes(t *testing.T) {
 	zw.Close()
 	r = &Response{
 		Header: http.Header{"Content-Encoding": []string{"gzip"}},
-		Body:   ioutil.NopCloser(&buf)}
+		Body:   io.NopCloser(&buf)}
 	if b := r.String(); b != "test" {
 		t.Errorf("expected %q; got %q", "test", b)
 	}
@@ -79,7 +80,7 @@ func TestBytes(t *testing.T) {
 	fw.Close()
 	r = &Response{
 		Header: http.Header{"Content-Encoding": []string{"deflate"}},
-		Body:   ioutil.NopCloser(&buf)}
+		Body:   io.NopCloser(&buf)}
 	if b := r.String(); b != "deflate" {
 		t.Errorf("expected %q; got %q", "deflate", b)
 	}
@@ -90,7 +91,7 @@ func TestJSON(t *testing.T) {
 	if err := r.JSON(nil); err == nil {
 		t.Error("gave nil error; want error")
 	}
-	r = &Response{Body: ioutil.NopCloser(bytes.NewReader([]byte("-1")))}
+	r = &Response{Body: io.NopCloser(bytes.NewReader([]byte("-1")))}
 	var data uint
 	if err := r.JSON(&data); err == nil {
 		t.Error("gave nil error; want error")
@@ -106,7 +107,7 @@ func TestSave(t *testing.T) {
 	if err := r.Save("error"); err == nil {
 		t.Error("gave nil error; want error")
 	}
-	r = &Response{Body: ioutil.NopCloser(bytes.NewBufferString("test"))}
+	r = &Response{Body: io.NopCloser(bytes.NewBufferString("test"))}
 	if err := r.Save(""); err == nil {
 		t.Error("gave nil error; want error")
 	}
@@ -116,7 +117,7 @@ func TestSave(t *testing.T) {
 	if err := r.Save(f.Name()); err != nil {
 		t.Error(err)
 	}
-	b, err := ioutil.ReadFile(f.Name())
+	b, err := os.ReadFile(f.Name())
 	if err != nil {
 		t.Error(err)
 	}

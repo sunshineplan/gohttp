@@ -17,6 +17,7 @@ type Session struct {
 // NewSession creates and initializes a new Session using initial contents.
 func NewSession() *Session {
 	jar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+
 	return &Session{
 		client: &http.Client{
 			Transport: &http.Transport{Proxy: nil},
@@ -32,7 +33,9 @@ func (s *Session) SetProxy(proxy string) error {
 	if err != nil {
 		return err
 	}
+
 	s.client.Transport = &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+
 	return nil
 }
 
@@ -56,6 +59,7 @@ func (s *Session) Get(url string, headers H) *Response {
 	for k, v := range headers {
 		s.Header.Set(k, v)
 	}
+
 	return doRequest("GET", url, s.Header, nil, s.client)
 }
 
@@ -64,6 +68,7 @@ func (s *Session) Head(url string, headers H) *Response {
 	for k, v := range headers {
 		s.Header.Set(k, v)
 	}
+
 	return doRequest("HEAD", url, s.Header, nil, s.client)
 }
 
@@ -72,6 +77,7 @@ func (s *Session) Post(url string, headers H, data interface{}) *Response {
 	for k, v := range headers {
 		s.Header.Set(k, v)
 	}
+
 	return doRequest("POST", url, s.Header, data, s.client)
 }
 
@@ -82,8 +88,10 @@ func (s *Session) Upload(url string, headers H, params map[string]string, files 
 		return &Response{Error: err}
 	}
 	s.Header.Add("Content-Type", contentType)
+
 	for k, v := range headers {
 		s.Header.Set(k, v)
 	}
+
 	return doRequest("POST", url, s.Header, r, s.client)
 }
