@@ -13,7 +13,7 @@ import (
 )
 
 var defaultAgent = "Go-http-client"
-var defaultClient = &http.Client{Transport: &http.Transport{Proxy: nil}}
+var defaultClient = http.Client{Transport: &http.Transport{Proxy: nil}}
 
 // H represents the key-value pairs in an HTTP header.
 type H map[string]string
@@ -32,6 +32,28 @@ func SetAgent(agent string) {
 	if agent != "" {
 		defaultAgent = agent
 	}
+}
+
+// SetProxy sets default client transport proxy.
+func SetProxy(proxy string) error {
+	proxyURL, err := url.Parse(proxy)
+	if err != nil {
+		return err
+	}
+
+	defaultClient.Transport = &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+
+	return nil
+}
+
+// SetNoProxy sets default client use no proxy.
+func SetNoProxy() {
+	defaultClient.Transport = &http.Transport{Proxy: nil}
+}
+
+// SetProxyFromEnvironment sets default client use environment proxy.
+func SetProxyFromEnvironment() {
+	defaultClient.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment}
 }
 
 func buildRequest(method, URL string, data interface{}) (*http.Request, error) {

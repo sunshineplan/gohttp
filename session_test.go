@@ -126,13 +126,3 @@ func TestSession(t *testing.T) {
 		}
 	}
 }
-
-func TestSetProxy(t *testing.T) {
-	s := NewSession()
-	if err := s.SetProxy("http://localhost"); err != nil {
-		t.Error(err)
-	}
-	if err := s.SetProxy("://localhost"); err == nil {
-		t.Error("gave nil error; want some error")
-	}
-}

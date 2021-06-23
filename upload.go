@@ -56,7 +56,7 @@ func buildMultipart(params map[string]string, files ...*File) (io.Reader, string
 
 // Upload issues a POST to the specified URL with a multipart document.
 func Upload(url string, headers H, params map[string]string, files ...*File) *Response {
-	return UploadWithClient(url, headers, params, files, defaultClient)
+	return UploadWithClient(url, headers, params, files, &defaultClient)
 }
 
 // UploadWithClient issues a POST to the specified URL with a multipart document and client.
@@ -71,5 +71,5 @@ func UploadWithClient(url string, headers H, params map[string]string, files []*
 		h[k] = v
 	}
 
-	return PostWithClient(url, h, r, defaultClient)
+	return PostWithClient(url, h, r, client)
 }

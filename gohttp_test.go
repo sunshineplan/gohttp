@@ -125,3 +125,17 @@ func TestSave(t *testing.T) {
 		t.Errorf("expected %q; got %q", "test", s)
 	}
 }
+
+func TestSetProxy(t *testing.T) {
+	if err := SetProxy("://localhost"); err == nil {
+		t.Error("gave nil error; want some error")
+	}
+
+	s := NewSession()
+	if err := s.SetProxy("http://localhost"); err != nil {
+		t.Error(err)
+	}
+	if err := s.SetProxy("://localhost"); err == nil {
+		t.Error("gave nil error; want some error")
+	}
+}
