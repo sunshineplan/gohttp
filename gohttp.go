@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-var defaultAgent = "Go-http-client"
-var defaultClient = http.Client{Transport: &http.Transport{Proxy: nil}}
+var defaultAgent = "Go-HTTP-Client"
+var defaultClient = http.DefaultClient
 
 // H represents the key-value pairs in an HTTP header.
 type H map[string]string
@@ -54,6 +54,15 @@ func SetNoProxy() {
 // SetProxyFromEnvironment sets default client use environment proxy.
 func SetProxyFromEnvironment() {
 	defaultClient.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment}
+}
+
+// SetClient sets default client.
+func SetClient(c *http.Client) {
+	if c != nil {
+		defaultClient = c
+	} else {
+		panic("cannot set a nil client")
+	}
 }
 
 func buildRequest(method, URL string, data interface{}) (*http.Request, error) {

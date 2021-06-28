@@ -139,3 +139,21 @@ func TestSetProxy(t *testing.T) {
 		t.Error("gave nil error; want some error")
 	}
 }
+
+func TestSetClient(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("gave panic; want nil panic")
+		}
+	}()
+	SetClient(http.DefaultClient)
+}
+
+func TestSetClientPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("gave nil panic; want panic")
+		}
+	}()
+	SetClient(nil)
+}

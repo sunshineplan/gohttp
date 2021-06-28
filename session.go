@@ -16,7 +16,7 @@ type Session struct {
 
 // NewSession creates and initializes a new Session using initial contents.
 func NewSession() *Session {
-	client := defaultClient
+	client := *defaultClient
 	jar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 
 	client.Jar = jar
@@ -47,6 +47,15 @@ func (s *Session) SetNoProxy() {
 // SetProxyFromEnvironment sets Session client use environment proxy.
 func (s *Session) SetProxyFromEnvironment() {
 	s.client.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment}
+}
+
+// SetClient sets default client.
+func (s *Session) SetClient(c *http.Client) {
+	if c != nil {
+		s.client = c
+	} else {
+		panic("cannot set a nil client")
+	}
 }
 
 // Cookies returns the cookies to send in a request for the given URL.
