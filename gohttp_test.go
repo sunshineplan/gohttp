@@ -33,9 +33,15 @@ func TestBuildRequest(t *testing.T) {
 }
 
 func TestDoRequest(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("gave no panic; want panic")
+		}
+	}()
 	if r := doRequest("bad method", "", nil, nil, nil); r.Error == nil {
 		t.Error("gave nil error; want error")
 	}
+	doRequest("GET", "", nil, nil, nil)
 }
 
 type errReader int
@@ -143,7 +149,7 @@ func TestSetProxy(t *testing.T) {
 func TestSetClient(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Error("gave panic; want nil panic")
+			t.Error("gave panic; want no panic")
 		}
 	}()
 	SetClient(http.DefaultClient)
@@ -152,7 +158,7 @@ func TestSetClient(t *testing.T) {
 func TestSetClientPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("gave nil panic; want panic")
+			t.Error("gave no panic; want panic")
 		}
 	}()
 	SetClient(nil)

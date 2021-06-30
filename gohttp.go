@@ -112,6 +112,10 @@ func doRequest(method, url string, header http.Header, data interface{}, client 
 		req.Header[k] = v
 	}
 
+	if client == nil {
+		panic("client pointer is nil")
+	}
+
 	return buildResponse(client.Do(req))
 }
 
@@ -164,20 +168,18 @@ func (r *Response) Bytes() []byte {
 	reader := r.Body
 	switch r.Header.Get("Content-Encoding") {
 	case "gzip":
-		var err error
-		reader, err = gzip.NewReader(reader)
-		if err != nil {
+		reader, r.Error = gzip.NewReader(reader)
+		if r.Error != nil {
 			return nil
 		}
 	case "deflate":
 		reader = flate.NewReader(reader)
 	}
 
-	body, err := io.ReadAll(reader)
-	if err != nil {
+	r.bytes, r.Error = io.ReadAll(reader)
+	if r.Error != nil {
 		return nil
 	}
-	r.bytes = body
 	r.cached = true
 
 	return r.bytes

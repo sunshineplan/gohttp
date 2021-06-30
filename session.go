@@ -60,6 +60,10 @@ func (s *Session) SetClient(c *http.Client) {
 
 // Cookies returns the cookies to send in a request for the given URL.
 func (s *Session) Cookies(u *url.URL) []*http.Cookie {
+	if u == nil {
+		panic("url pointer is nil")
+	}
+
 	return s.client.Jar.Cookies(u)
 }
 
@@ -70,6 +74,10 @@ func (s *Session) SetCookie(u *url.URL, name, value string) {
 
 // SetCookies handles the receipt of the cookies in a reply for the given URL.
 func (s *Session) SetCookies(u *url.URL, cookies []*http.Cookie) {
+	if u == nil {
+		panic("url pointer is nil")
+	}
+
 	s.client.Jar.SetCookies(u, cookies)
 }
 
