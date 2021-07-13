@@ -17,7 +17,7 @@ func TestGetAndHead(t *testing.T) {
 
 	resp := Get(ts.URL, H{"hello": "world"})
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
 	if resp.Request.Method != "GET" {
 		t.Errorf("expected method %q; got %q", "GET", resp.Request.Method)
@@ -37,7 +37,7 @@ func TestGetAndHead(t *testing.T) {
 
 	resp = Head(ts.URL, H{"hello": "world"})
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
 	if resp.Request.Method != "HEAD" {
 		t.Errorf("expected method %q; got %q", "HEAD", resp.Request.Method)
@@ -57,7 +57,7 @@ func TestPost(t *testing.T) {
 	SetAgent("test")
 	resp := Post(ts.URL, H{"hello": "world"}, nil)
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
 	defer resp.Close()
 	if resp.Request.Method != "POST" {
@@ -78,7 +78,7 @@ func TestPost(t *testing.T) {
 
 	resp = Post(ts.URL, nil, url.Values{"test": []string{"test"}})
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
 	defer resp.Close()
 	if ct := resp.Request.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
@@ -90,7 +90,7 @@ func TestPost(t *testing.T) {
 
 	resp = Post(ts.URL, nil, map[string]interface{}{"test": "test"})
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
 	defer resp.Close()
 	if ct := resp.Request.Header.Get("Content-Type"); ct != "application/json" {

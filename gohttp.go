@@ -121,15 +121,10 @@ func doRequest(method, url string, header http.Header, data interface{}, client 
 
 // Response represents the response from an HTTP request.
 type Response struct {
-	Error      error
-	Body       io.ReadCloser
-	StatusCode int
-	Header     http.Header
-	Cookies    []*http.Cookie
-	Request    *http.Request
-	Response   *http.Response
-	cached     bool
-	bytes      []byte
+	*http.Response
+	Error  error
+	cached bool
+	bytes  []byte
 }
 
 func buildResponse(resp *http.Response, err error) *Response {
@@ -137,15 +132,7 @@ func buildResponse(resp *http.Response, err error) *Response {
 		return &Response{Error: err}
 	}
 
-	return &Response{
-		Error:      nil,
-		Body:       resp.Body,
-		StatusCode: resp.StatusCode,
-		Header:     resp.Header,
-		Cookies:    resp.Cookies(),
-		Request:    resp.Request,
-		Response:   resp,
-	}
+	return &Response{Response: resp}
 }
 
 // Close closes the response body.

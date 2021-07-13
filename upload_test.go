@@ -11,7 +11,7 @@ import (
 func TestPanicF(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("gave no panic; want panic")
+			t.Fatal("gave no panic; want panic")
 		}
 	}()
 	F("", "I am Not A File")

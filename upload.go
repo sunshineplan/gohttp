@@ -41,7 +41,11 @@ func buildMultipart(params map[string]string, files ...*File) (io.Reader, string
 		}
 		defer file.Close()
 
-		part, _ := w.CreateFormFile(file.Fieldname, file.Filename)
+		part, err := w.CreateFormFile(file.Fieldname, file.Filename)
+		if err != nil {
+			return nil, "", err
+		}
+
 		if _, err := io.Copy(part, file); err != nil {
 			return nil, "", err
 		}

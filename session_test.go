@@ -30,7 +30,7 @@ func TestSession(t *testing.T) {
 	s.SetCookie(tsURL, "two", "second")
 	resp := s.Get(ts.URL, H{"another": "header"})
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
 	defer resp.Close()
 
@@ -43,7 +43,7 @@ func TestSession(t *testing.T) {
 	if h := resp.Request.Header.Get("another"); h != "header" {
 		t.Errorf("expected hello header %q; got %q", "header", h)
 	}
-	if c := resp.Cookies[0]; c.String() != "hello=world" {
+	if c := resp.Cookies()[0]; c.String() != "hello=world" {
 		t.Errorf("expected set cookie %q; got %q", "hello=world", c)
 	}
 	if c, _ := resp.Request.Cookie("one"); c.String() != "one=first" {
@@ -55,19 +55,19 @@ func TestSession(t *testing.T) {
 
 	resp = s.Head(ts.URL, H{"another": "header"})
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
+	defer resp.Close()
 	if resp.Request.Method != "HEAD" {
 		t.Errorf("expected method %q; got %q", "HEAD", resp.Request.Method)
 	}
-	defer resp.Close()
 	if c := s.Cookies(resp.Request.URL); len(c) != 3 {
 		t.Errorf("expected cookies number %d; got %d", 3, len(c))
 	}
 
 	resp = s.Post(ts.URL, H{"post": "header"}, bytes.NewBufferString("Hello, world!"))
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
 	if resp.Request.Method != "POST" {
 		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
@@ -88,7 +88,7 @@ func TestSession(t *testing.T) {
 
 	resp = s.Upload(ts.URL, H{"upload": "header"}, map[string]string{"param": "test"}, F("file1", f.Name()), nil, F("file2", f.Name()))
 	if resp.Error != nil {
-		t.Error(resp.Error)
+		t.Fatal(resp.Error)
 	}
 	if resp.Request.Method != "POST" {
 		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
@@ -112,7 +112,7 @@ func TestSession(t *testing.T) {
 		case "param":
 			b, err := io.ReadAll(p)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 
 			if s := string(b); s != "test" {
@@ -125,7 +125,7 @@ func TestSession(t *testing.T) {
 
 			b, err := io.ReadAll(p)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 
 			if s := string(b); s != "tempfile" {
@@ -138,7 +138,7 @@ func TestSession(t *testing.T) {
 func TestCookies(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("gave no panic; want panic")
+			t.Fatal("gave no panic; want panic")
 		}
 	}()
 	NewSession().Cookies(nil)
@@ -147,7 +147,7 @@ func TestCookies(t *testing.T) {
 func TestSetCookie(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("gave no panic; want panic")
+			t.Fatal("gave no panic; want panic")
 		}
 	}()
 	NewSession().SetCookie(nil, "", "")
