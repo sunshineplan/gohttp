@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestSession(t *testing.T) {
@@ -132,6 +133,21 @@ func TestSession(t *testing.T) {
 				t.Errorf("expected %q; got %q", "tempfile", s)
 			}
 		}
+	}
+}
+
+func TestSessionTimeout(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Second)
+		fmt.Fprint(w, "sleep 1 second")
+	}))
+	defer ts.Close()
+
+	s := NewSession()
+	s.SetTimeout(100 * time.Millisecond)
+	resp := s.Get(ts.URL, nil)
+	if resp.Error == nil {
+		t.Fatal("gave nil error; want error")
 	}
 }
 

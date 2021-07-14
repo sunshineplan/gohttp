@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"time"
 
 	"golang.org/x/net/publicsuffix"
 )
@@ -47,6 +48,11 @@ func (s *Session) SetNoProxy() {
 // SetProxyFromEnvironment sets Session client use environment proxy.
 func (s *Session) SetProxyFromEnvironment() {
 	s.client.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment}
+}
+
+// SetTimeout sets Session client timeout. Zero means no timeout.
+func (s *Session) SetTimeout(d time.Duration) {
+	s.client.Timeout = d
 }
 
 // SetClient sets default client.
