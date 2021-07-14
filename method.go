@@ -9,12 +9,7 @@ func Get(url string, headers H) *Response {
 
 // GetWithClient issues a GET to the specified URL with headers and client.
 func GetWithClient(url string, headers H, client *http.Client) *Response {
-	h := make(http.Header)
-	for k, v := range headers {
-		h.Set(k, v)
-	}
-
-	return doRequest("GET", url, h, nil, client)
+	return doRequest("GET", url, buildHeader(headers), nil, client)
 }
 
 // Head issues a HEAD to the specified URL with headers.
@@ -24,12 +19,7 @@ func Head(url string, headers H) *Response {
 
 // HeadWithClient issues a HEAD to the specified URL with headers and client.
 func HeadWithClient(url string, headers H, client *http.Client) *Response {
-	h := make(http.Header)
-	for k, v := range headers {
-		h.Set(k, v)
-	}
-
-	return doRequest("HEAD", url, h, nil, client)
+	return doRequest("HEAD", url, buildHeader(headers), nil, client)
 }
 
 // Post issues a POST to the specified URL with headers.
@@ -40,10 +30,5 @@ func Post(url string, headers H, data interface{}) *Response {
 
 // PostWithClient issues a POST to the specified URL with headers and client.
 func PostWithClient(url string, headers H, data interface{}, client *http.Client) *Response {
-	h := make(http.Header)
-	for k, v := range headers {
-		h.Set(k, v)
-	}
-
-	return doRequest("POST", url, h, data, client)
+	return doRequest("POST", url, buildHeader(headers), data, client)
 }

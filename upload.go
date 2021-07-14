@@ -31,8 +31,8 @@ func F(fieldname, filename string) *File {
 }
 
 func buildMultipart(params map[string]string, files ...*File) (io.Reader, string, error) {
-	var body bytes.Buffer
-	w := multipart.NewWriter(&body)
+	data := new(bytes.Buffer)
+	w := multipart.NewWriter(data)
 	defer w.Close()
 
 	for _, file := range files {
@@ -55,7 +55,7 @@ func buildMultipart(params map[string]string, files ...*File) (io.Reader, string
 		w.WriteField(k, v)
 	}
 
-	return &body, w.FormDataContentType(), nil
+	return data, w.FormDataContentType(), nil
 }
 
 // Upload issues a POST to the specified URL with a multipart document.
@@ -65,7 +65,7 @@ func Upload(url string, headers H, params map[string]string, files ...*File) *Re
 
 // UploadWithClient issues a POST to the specified URL with a multipart document and client.
 func UploadWithClient(url string, headers H, params map[string]string, files []*File, client *http.Client) *Response {
-	r, contentType, err := buildMultipart(params, files...)
+	data, contentType, err := buildMultipart(params, files...)
 	if err != nil {
 		return &Response{Error: err}
 	}
@@ -75,5 +75,5 @@ func UploadWithClient(url string, headers H, params map[string]string, files []*
 		h[k] = v
 	}
 
-	return PostWithClient(url, h, r, client)
+	return PostWithClient(url, h, data, client)
 }

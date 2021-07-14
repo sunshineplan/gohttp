@@ -65,37 +65,43 @@ func SetClient(c *http.Client) {
 	}
 }
 
+func buildHeader(headers H) http.Header {
+	h := make(http.Header)
+	for k, v := range headers {
+		h.Set(k, v)
+	}
+	return h
+}
+
 func buildRequest(method, URL string, data interface{}) (*http.Request, error) {
+	var body io.Reader
+	var contentType string
+
 	switch data := data.(type) {
 	case nil:
-		return http.NewRequest(method, URL, nil)
-
 	case io.Reader:
-		return http.NewRequest(method, URL, data)
-
+		body = data
 	case url.Values:
-		req, err := http.NewRequest(method, URL, strings.NewReader(data.Encode()))
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		return req, nil
-
+		body = strings.NewReader(data.Encode())
+		contentType = "application/x-www-form-urlencoded"
 	default:
-		jsonData, err := json.Marshal(data)
+		b, err := json.Marshal(data)
 		if err != nil {
 			return nil, err
 		}
-
-		req, err := http.NewRequest(method, URL, bytes.NewBuffer(jsonData))
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Content-Type", "application/json")
-
-		return req, nil
+		body = bytes.NewBuffer(b)
+		contentType = "application/json"
 	}
+
+	req, err := http.NewRequest(method, URL, body)
+	if err != nil {
+		return nil, err
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	return req, nil
 }
 
 func doRequest(method, url string, header http.Header, data interface{}, client *http.Client) *Response {
