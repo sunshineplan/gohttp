@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	urlpkg "net/url"
 	"os"
 	"strings"
 )
@@ -73,7 +74,7 @@ func buildHeader(headers H) http.Header {
 	return h
 }
 
-func buildRequest(method, URL string, data interface{}) (*http.Request, error) {
+func buildRequest(method, url string, data interface{}) (*http.Request, error) {
 	var body io.Reader
 	var contentType string
 
@@ -81,7 +82,7 @@ func buildRequest(method, URL string, data interface{}) (*http.Request, error) {
 	case nil:
 	case io.Reader:
 		body = data
-	case url.Values:
+	case urlpkg.Values:
 		body = strings.NewReader(data.Encode())
 		contentType = "application/x-www-form-urlencoded"
 	default:
@@ -93,7 +94,7 @@ func buildRequest(method, URL string, data interface{}) (*http.Request, error) {
 		contentType = "application/json"
 	}
 
-	req, err := http.NewRequest(method, URL, body)
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
