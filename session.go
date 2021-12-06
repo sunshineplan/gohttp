@@ -9,6 +9,8 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+var _ http.CookieJar = &Session{}
+
 // Session provides cookie persistence and configuration.
 type Session struct {
 	client *http.Client
@@ -127,4 +129,18 @@ func (s *Session) Upload(url string, headers H, params map[string]string, files 
 	}
 
 	return doRequest("POST", url, s.Header, data, s.client)
+}
+
+// KeepAlive repeatedly calls fn with a fixed interval delay between each call.
+func (s *Session) KeepAlive(interval time.Duration, fn func(*Session) error) (err error) {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+
+	for range t.C {
+		if err = fn(s); err != nil {
+			return
+		}
+	}
+
+	return
 }

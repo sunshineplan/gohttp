@@ -143,10 +143,11 @@ func buildResponse(resp *http.Response, err error) *Response {
 }
 
 // Close closes the response body.
-func (r *Response) Close() {
+func (r *Response) Close() error {
 	if r.Error == nil {
-		r.Body.Close()
+		return r.Body.Close()
 	}
+	return nil
 }
 
 // Bytes returns a slice of byte of the response body.
