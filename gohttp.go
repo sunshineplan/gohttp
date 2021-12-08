@@ -35,6 +35,23 @@ func SetAgent(agent string) {
 	}
 }
 
+func setProxy(fn func(*http.Request) (*url.URL, error)) {
+	var tr *http.Transport
+	var ok bool
+	if defaultClient.Transport == nil {
+		if tr, ok = http.DefaultTransport.(*http.Transport); ok {
+			tr.Proxy = fn
+		}
+	} else {
+		if tr, ok = defaultClient.Transport.(*http.Transport); ok {
+			tr.Proxy = fn
+		}
+	}
+	if !ok {
+		panic("Transport is not *http.Transport type")
+	}
+}
+
 // SetProxy sets default client transport proxy.
 func SetProxy(proxy string) error {
 	proxyURL, err := url.Parse(proxy)
@@ -42,19 +59,19 @@ func SetProxy(proxy string) error {
 		return err
 	}
 
-	defaultClient.Transport = &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	setProxy(http.ProxyURL(proxyURL))
 
 	return nil
 }
 
 // SetNoProxy sets default client use no proxy.
 func SetNoProxy() {
-	defaultClient.Transport = &http.Transport{Proxy: nil}
+	setProxy(nil)
 }
 
 // SetProxyFromEnvironment sets default client use environment proxy.
 func SetProxyFromEnvironment() {
-	defaultClient.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment}
+	setProxy(http.ProxyFromEnvironment)
 }
 
 // SetClient sets default client.

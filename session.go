@@ -20,13 +20,28 @@ type Session struct {
 // NewSession creates and initializes a new Session using initial contents.
 func NewSession() *Session {
 	client := *defaultClient
-	jar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-
-	client.Jar = jar
+	client.Jar, _ = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 
 	return &Session{
 		client: &client,
 		Header: make(http.Header),
+	}
+}
+
+func (s *Session) setProxy(fn func(*http.Request) (*url.URL, error)) {
+	var tr *http.Transport
+	var ok bool
+	if s.client.Transport == nil {
+		if tr, ok = http.DefaultTransport.(*http.Transport); ok {
+			tr.Proxy = fn
+		}
+	} else {
+		if tr, ok = s.client.Transport.(*http.Transport); ok {
+			tr.Proxy = fn
+		}
+	}
+	if !ok {
+		panic("Transport is not *http.Transport type")
 	}
 }
 
@@ -37,19 +52,19 @@ func (s *Session) SetProxy(proxy string) error {
 		return err
 	}
 
-	s.client.Transport = &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	s.setProxy(http.ProxyURL(proxyURL))
 
 	return nil
 }
 
 // SetNoProxy sets Session client use no proxy.
 func (s *Session) SetNoProxy() {
-	s.client.Transport = &http.Transport{Proxy: nil}
+	s.setProxy(nil)
 }
 
 // SetProxyFromEnvironment sets Session client use environment proxy.
 func (s *Session) SetProxyFromEnvironment() {
-	s.client.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment}
+	s.setProxy(http.ProxyFromEnvironment)
 }
 
 // SetTimeout sets Session client timeout. Zero means no timeout.

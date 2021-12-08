@@ -15,6 +15,7 @@ func TestGetAndHead(t *testing.T) {
 	}))
 	defer ts.Close()
 
+	SetNoProxy()
 	resp := Get(ts.URL, H{"hello": "world"})
 	if resp.Error != nil {
 		t.Fatal(resp.Error)
