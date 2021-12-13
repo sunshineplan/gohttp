@@ -50,5 +50,11 @@ func (s *Session) SetLogin(fn func(*Session, interface{}) error) *Session {
 }
 
 func (s *Session) Login() error {
+	if s.login == nil {
+		return ErrNilLogin
+	}
+	if s.Session == nil {
+		s.Session = gohttp.NewSession()
+	}
 	return s.login(s, nil)
 }

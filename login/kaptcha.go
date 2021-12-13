@@ -3,14 +3,16 @@ package login
 import (
 	"fmt"
 	"time"
+
+	"github.com/sunshineplan/gohttp"
 )
 
 func (s *Session) Kaptcha(kaptcha func(*Session) (string, error)) error {
-	if s == nil {
-		s = New()
-	}
 	if s.login == nil {
 		return ErrNilLogin
+	}
+	if s.Session == nil {
+		s.Session = gohttp.NewSession()
 	}
 
 	data, err := kaptcha(s)
