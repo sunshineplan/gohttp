@@ -147,15 +147,16 @@ func (s *Session) Upload(url string, headers H, params map[string]string, files 
 }
 
 // KeepAlive repeatedly calls fn with a fixed interval delay between each call.
-func (s *Session) KeepAlive(interval time.Duration, fn func(*Session) error) (err error) {
-	t := time.NewTicker(interval)
-	defer t.Stop()
+func (s *Session) KeepAlive(interval *time.Duration, fn func(*Session) error) (err error) {
+	if err = fn(s); err != nil {
+		return
+	}
 
-	for range t.C {
+	for {
+		<-time.After(*interval)
+
 		if err = fn(s); err != nil {
 			return
 		}
 	}
-
-	return
 }
