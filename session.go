@@ -123,7 +123,7 @@ func (s *Session) Head(url string, headers H) *Response {
 }
 
 // Post issues a session POST to the specified URL with additional headers.
-func (s *Session) Post(url string, headers H, data interface{}) *Response {
+func (s *Session) Post(url string, headers H, data any) *Response {
 	for k, v := range headers {
 		s.Header.Set(k, v)
 	}

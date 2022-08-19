@@ -89,7 +89,7 @@ func TestPost(t *testing.T) {
 		t.Errorf("expected response body %q; got %q", "test=test", s)
 	}
 
-	resp = Post(ts.URL, nil, map[string]interface{}{"test": "test"})
+	resp = Post(ts.URL, nil, map[string]any{"test": "test"})
 	if resp.Error != nil {
 		t.Fatal(resp.Error)
 	}

@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -140,7 +139,7 @@ func TestSave(t *testing.T) {
 		t.Error("gave nil error; want error")
 	}
 
-	f, _ := ioutil.TempFile("", "test")
+	f, _ := os.CreateTemp("", "test")
 	f.Close()
 	defer os.Remove(f.Name())
 

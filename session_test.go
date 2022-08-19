@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -82,7 +81,7 @@ func TestSession(t *testing.T) {
 		t.Error("gave nil error; want error")
 	}
 
-	f, _ := ioutil.TempFile("", "test")
+	f, _ := os.CreateTemp("", "test")
 	f.WriteString("tempfile")
 	f.Close()
 	defer os.Remove(f.Name())

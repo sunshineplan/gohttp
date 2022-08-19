@@ -13,8 +13,10 @@ import (
 	"strings"
 )
 
-var defaultAgent = "Go-HTTP-Client"
-var defaultClient = http.DefaultClient
+var (
+	defaultAgent  = "Go-HTTP-Client"
+	defaultClient = http.DefaultClient
+)
 
 // H represents the key-value pairs in an HTTP header.
 type H map[string]string
@@ -91,7 +93,7 @@ func buildHeader(headers H) http.Header {
 	return h
 }
 
-func buildRequest(method, url string, data interface{}) (*http.Request, error) {
+func buildRequest(method, url string, data any) (*http.Request, error) {
 	var body io.Reader
 	var contentType string
 
@@ -122,7 +124,7 @@ func buildRequest(method, url string, data interface{}) (*http.Request, error) {
 	return req, nil
 }
 
-func doRequest(method, url string, header http.Header, data interface{}, client *http.Client) *Response {
+func doRequest(method, url string, header http.Header, data any, client *http.Client) *Response {
 	req, err := buildRequest(method, url, data)
 	if err != nil {
 		return &Response{Error: err}
@@ -204,7 +206,7 @@ func (r *Response) String() string {
 
 // JSON parses the response body as JSON-encoded data
 // and stores the result in the value pointed to by data.
-func (r *Response) JSON(data interface{}) error {
+func (r *Response) JSON(data any) error {
 	if r.Error != nil {
 		return r.Error
 	}

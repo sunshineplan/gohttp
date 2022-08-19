@@ -16,7 +16,7 @@ var SetAgent = gohttp.SetAgent
 
 type Session struct {
 	*gohttp.Session
-	login    func(*Session, interface{}) error
+	login    func(*Session, any) error
 	retry    int
 	interval time.Duration
 }
@@ -44,7 +44,7 @@ func (s *Session) SetRetryInterval(d time.Duration) *Session {
 	return s
 }
 
-func (s *Session) SetLogin(fn func(*Session, interface{}) error) *Session {
+func (s *Session) SetLogin(fn func(*Session, any) error) *Session {
 	s.login = fn
 	return s
 }

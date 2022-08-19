@@ -24,11 +24,11 @@ func HeadWithClient(url string, headers H, client *http.Client) *Response {
 
 // Post issues a POST to the specified URL with headers.
 // Post data should be one of nil, io.Reader, url.Values, string map or struct.
-func Post(url string, headers H, data interface{}) *Response {
+func Post(url string, headers H, data any) *Response {
 	return PostWithClient(url, headers, data, defaultClient)
 }
 
 // PostWithClient issues a POST to the specified URL with headers and client.
-func PostWithClient(url string, headers H, data interface{}, client *http.Client) *Response {
+func PostWithClient(url string, headers H, data any, client *http.Client) *Response {
 	return doRequest("POST", url, buildHeader(headers), data, client)
 }
