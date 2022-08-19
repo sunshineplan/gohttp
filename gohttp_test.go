@@ -128,14 +128,14 @@ func TestJSON(t *testing.T) {
 
 func TestSave(t *testing.T) {
 	r := buildResponse(nil, errors.New("test"))
-	if err := r.Save("error"); err == nil {
+	if _, err := r.Save("error"); err == nil {
 		t.Error("gave nil error; want error")
 	}
 
 	r = &Response{
 		Response: &http.Response{Body: io.NopCloser(bytes.NewBufferString("test"))},
 	}
-	if err := r.Save(""); err == nil {
+	if _, err := r.Save(""); err == nil {
 		t.Error("gave nil error; want error")
 	}
 
@@ -143,8 +143,10 @@ func TestSave(t *testing.T) {
 	f.Close()
 	defer os.Remove(f.Name())
 
-	if err := r.Save(f.Name()); err != nil {
+	if n, err := r.Save(f.Name()); err != nil {
 		t.Fatal(err)
+	} else if n != 4 {
+		t.Error(n)
 	}
 	b, err := os.ReadFile(f.Name())
 	if err != nil {

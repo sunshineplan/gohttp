@@ -135,7 +135,7 @@ func (s *Session) Post(url string, headers H, data any) *Response {
 func (s *Session) Upload(url string, headers H, params map[string]string, files ...*File) *Response {
 	data, contentType, err := buildMultipart(params, files...)
 	if err != nil {
-		return &Response{Error: err}
+		return &Response{Response: new(http.Response), Error: err}
 	}
 	s.Header.Add("Content-Type", contentType)
 

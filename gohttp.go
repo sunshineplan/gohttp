@@ -127,7 +127,7 @@ func buildRequest(method, url string, data any) (*http.Request, error) {
 func doRequest(method, url string, header http.Header, data any, client *http.Client) *Response {
 	req, err := buildRequest(method, url, data)
 	if err != nil {
-		return &Response{Error: err}
+		return &Response{Response: new(http.Response), Error: err}
 	}
 
 	for k, v := range defaultHeaders() {
@@ -139,7 +139,7 @@ func doRequest(method, url string, header http.Header, data any, client *http.Cl
 	}
 
 	if client == nil {
-		panic("client pointer is nil")
+		panic("client is nil")
 	}
 
 	return buildResponse(client.Do(req))
@@ -155,7 +155,7 @@ type Response struct {
 
 func buildResponse(resp *http.Response, err error) *Response {
 	if err != nil {
-		return &Response{Error: err}
+		return &Response{Response: new(http.Response), Error: err}
 	}
 
 	return &Response{Response: resp}
@@ -163,7 +163,7 @@ func buildResponse(resp *http.Response, err error) *Response {
 
 // Close closes the response body.
 func (r *Response) Close() error {
-	if r.Error == nil {
+	if r.Error == nil && r.Response != nil && r.Body != nil {
 		return r.Body.Close()
 	}
 	return nil
@@ -171,13 +171,13 @@ func (r *Response) Close() error {
 
 // Bytes returns a slice of byte of the response body.
 func (r *Response) Bytes() []byte {
-	if r.Error != nil {
+	if r.Error != nil || r.Response == nil || r.Body == nil {
 		return nil
 	}
 	if r.cached {
 		return r.bytes
 	}
-	defer r.Close()
+	defer r.Body.Close()
 
 	reader := r.Body
 	switch r.Header.Get("Content-Encoding") {
@@ -211,22 +211,21 @@ func (r *Response) JSON(data any) error {
 		return r.Error
 	}
 
-	return json.Unmarshal(r.Bytes(), &data)
+	return json.Unmarshal(r.Bytes(), data)
 }
 
-// Save saves the response data to file.
-func (r *Response) Save(file string) error {
+// Save saves the response data to file. It returns the number
+// of bytes written and an error, if any.
+func (r *Response) Save(file string) (int, error) {
 	if r.Error != nil {
-		return r.Error
+		return 0, r.Error
 	}
 
 	f, err := os.Create(file)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer f.Close()
 
-	_, err = f.Write(r.Bytes())
-
-	return err
+	return f.Write(r.Bytes())
 }

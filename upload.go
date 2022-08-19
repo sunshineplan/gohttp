@@ -67,7 +67,7 @@ func Upload(url string, headers H, params map[string]string, files ...*File) *Re
 func UploadWithClient(url string, headers H, params map[string]string, files []*File, client *http.Client) *Response {
 	data, contentType, err := buildMultipart(params, files...)
 	if err != nil {
-		return &Response{Error: err}
+		return &Response{Response: new(http.Response), Error: err}
 	}
 	h := H{"Content-Type": contentType}
 
