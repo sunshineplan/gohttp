@@ -31,7 +31,7 @@ jobs:
         working-directory: src/github.com/sunshineplan/gohttp
 
       - name: Install goveralls
-        run: go get github.com/mattn/goveralls
+        run: go install github.com/mattn/goveralls@latest
 
       - name: Send coverage
         env:
