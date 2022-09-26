@@ -78,11 +78,7 @@ func SetProxyFromEnvironment() {
 
 // SetClient sets default client.
 func SetClient(c *http.Client) {
-	if c != nil {
-		defaultClient = c
-	} else {
-		panic("cannot set a nil client")
-	}
+	defaultClient = c
 }
 
 func buildHeader(headers H) http.Header {
@@ -136,10 +132,6 @@ func doRequest(method, url string, header http.Header, data any, client *http.Cl
 
 	for k, v := range header {
 		req.Header[k] = v
-	}
-
-	if client == nil {
-		panic("client is nil")
 	}
 
 	return buildResponse(client.Do(req))

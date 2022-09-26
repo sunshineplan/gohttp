@@ -13,7 +13,7 @@ var _ http.CookieJar = &Session{}
 
 // Session provides cookie persistence and configuration.
 type Session struct {
-	client *http.Client
+	*http.Client
 	Header http.Header
 }
 
@@ -23,7 +23,7 @@ func NewSession() *Session {
 	client.Jar, _ = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 
 	return &Session{
-		client: &client,
+		Client: &client,
 		Header: make(http.Header),
 	}
 }
@@ -31,12 +31,12 @@ func NewSession() *Session {
 func (s *Session) setProxy(fn func(*http.Request) (*url.URL, error)) {
 	var tr *http.Transport
 	var ok bool
-	if s.client.Transport == nil {
+	if s.Transport == nil {
 		if tr, ok = http.DefaultTransport.(*http.Transport); ok {
 			tr.Proxy = fn
 		}
 	} else {
-		if tr, ok = s.client.Transport.(*http.Transport); ok {
+		if tr, ok = s.Transport.(*http.Transport); ok {
 			tr.Proxy = fn
 		}
 	}
@@ -69,25 +69,17 @@ func (s *Session) SetProxyFromEnvironment() {
 
 // SetTimeout sets Session client timeout. Zero means no timeout.
 func (s *Session) SetTimeout(d time.Duration) {
-	s.client.Timeout = d
+	s.Timeout = d
 }
 
 // SetClient sets default client.
 func (s *Session) SetClient(c *http.Client) {
-	if c != nil {
-		s.client = c
-	} else {
-		panic("cannot set a nil client")
-	}
+	s.Client = c
 }
 
 // Cookies returns the cookies to send in a request for the given URL.
 func (s *Session) Cookies(u *url.URL) []*http.Cookie {
-	if u == nil {
-		panic("url pointer is nil")
-	}
-
-	return s.client.Jar.Cookies(u)
+	return s.Jar.Cookies(u)
 }
 
 // SetCookie handles the receipt of the cookie in a reply for the given URL.
@@ -97,11 +89,7 @@ func (s *Session) SetCookie(u *url.URL, name, value string) {
 
 // SetCookies handles the receipt of the cookies in a reply for the given URL.
 func (s *Session) SetCookies(u *url.URL, cookies []*http.Cookie) {
-	if u == nil {
-		panic("url pointer is nil")
-	}
-
-	s.client.Jar.SetCookies(u, cookies)
+	s.Jar.SetCookies(u, cookies)
 }
 
 // Get issues a session GET to the specified URL with additional headers.
@@ -110,7 +98,7 @@ func (s *Session) Get(url string, headers H) *Response {
 		s.Header.Set(k, v)
 	}
 
-	return doRequest("GET", url, s.Header, nil, s.client)
+	return doRequest("GET", url, s.Header, nil, s.Client)
 }
 
 // Head issues a session HEAD to the specified URL with additional headers.
@@ -119,7 +107,7 @@ func (s *Session) Head(url string, headers H) *Response {
 		s.Header.Set(k, v)
 	}
 
-	return doRequest("HEAD", url, s.Header, nil, s.client)
+	return doRequest("HEAD", url, s.Header, nil, s.Client)
 }
 
 // Post issues a session POST to the specified URL with additional headers.
@@ -128,7 +116,7 @@ func (s *Session) Post(url string, headers H, data any) *Response {
 		s.Header.Set(k, v)
 	}
 
-	return doRequest("POST", url, s.Header, data, s.client)
+	return doRequest("POST", url, s.Header, data, s.Client)
 }
 
 // Upload issues a session POST to the specified URL with a multipart document and additional headers.
@@ -143,7 +131,7 @@ func (s *Session) Upload(url string, headers H, params map[string]string, files 
 		s.Header.Set(k, v)
 	}
 
-	return doRequest("POST", url, s.Header, data, s.client)
+	return doRequest("POST", url, s.Header, data, s.Client)
 }
 
 // KeepAlive repeatedly calls fn with a fixed interval delay between each call.
