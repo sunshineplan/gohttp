@@ -181,12 +181,3 @@ func TestSetClient(t *testing.T) {
 	}()
 	SetClient(http.DefaultClient)
 }
-
-func TestSetClientPanic(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("gave no panic; want panic")
-		}
-	}()
-	SetClient(nil)
-}
