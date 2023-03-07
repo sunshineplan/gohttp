@@ -7,8 +7,10 @@ import (
 	"github.com/sunshineplan/gohttp"
 )
 
-const defaultWrongRetry = 5
-const defaultRetryInterval = 5 * time.Second
+const (
+	defaultWrongRetry    = 5
+	defaultRetryInterval = 5 * time.Second
+)
 
 var ErrNilLogin = errors.New("nil login function")
 

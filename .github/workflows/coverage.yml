@@ -7,34 +7,22 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: Test with Coverage
+  coverage:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
-        with:
-          path: src/github.com/sunshineplan/gohttp
+        uses: actions/checkout@v3
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: '1.x'
+          go-version: stable
 
-      - name: Setup GOPATH
-        run: |
-          echo "GOPATH=${{ github.workspace }}" >> "$GITHUB_ENV"
-          echo "${{ github.workspace }}/bin" >> "$GITHUB_PATH"
-
-      - name: Run Unit tests
-        run: go test -race -covermode atomic -coverprofile=covprofile ./...
-        working-directory: src/github.com/sunshineplan/gohttp
-
-      - name: Install goveralls
-        run: go install github.com/mattn/goveralls@latest
-
-      - name: Send coverage
+      - name: Send Coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goveralls -coverprofile=covprofile -service=github
-        working-directory: src/github.com/sunshineplan/gohttp
+        run: |
+          go test -race -covermode atomic -coverprofile=covprofile ./...
+          go install github.com/mattn/goveralls@latest
+          goveralls -coverprofile=covprofile -service=github

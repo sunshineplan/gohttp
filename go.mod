@@ -1,5 +1,5 @@
 module github.com/sunshineplan/gohttp
 
-go 1.18
+go 1.20
 
-require golang.org/x/net v0.0.0-20220923203811-8be639271d50
+require golang.org/x/net v0.8.0
