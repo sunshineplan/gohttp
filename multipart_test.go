@@ -1,10 +1,6 @@
 package gohttp
 
 import (
-	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -27,23 +23,5 @@ func TestBuildMultipart(t *testing.T) {
 	f.Filename = "test"
 	if _, _, err := buildMultipart(nil, f); err == nil {
 		t.Error("gave nil error; want error")
-	}
-}
-
-func TestUpload(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, _ := io.ReadAll(r.Body)
-		fmt.Fprint(w, string(c))
-	}))
-	defer ts.Close()
-
-	resp := Upload(ts.URL, nil, nil, &File{ReadCloser: errReader(0)})
-	if resp.Error == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	resp = Upload(ts.URL, H{"header": "value"}, nil, F("readme", "README.md"))
-	if resp.Error != nil {
-		t.Error(resp.Error)
 	}
 }

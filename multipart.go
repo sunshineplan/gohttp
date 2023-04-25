@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 )
@@ -56,24 +55,4 @@ func buildMultipart(params map[string]string, files ...*File) (io.Reader, string
 	}
 
 	return data, w.FormDataContentType(), nil
-}
-
-// Upload issues a POST to the specified URL with a multipart document.
-func Upload(url string, headers H, params map[string]string, files ...*File) *Response {
-	return UploadWithClient(url, headers, params, files, defaultClient)
-}
-
-// UploadWithClient issues a POST to the specified URL with a multipart document and client.
-func UploadWithClient(url string, headers H, params map[string]string, files []*File, client *http.Client) *Response {
-	data, contentType, err := buildMultipart(params, files...)
-	if err != nil {
-		return &Response{Response: new(http.Response), Error: err}
-	}
-	h := H{"Content-Type": contentType}
-
-	for k, v := range headers {
-		h[k] = v
-	}
-
-	return PostWithClient(url, h, data, client)
 }

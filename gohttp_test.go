@@ -1,161 +1,13 @@
 package gohttp
 
 import (
-	"bytes"
-	"compress/flate"
-	"compress/gzip"
-	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
-	"os"
 	"testing"
 )
-
-func TestBuildRequest(t *testing.T) {
-	if _, err := buildRequest("bad method", "", url.Values{}); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	if _, err := buildRequest("bad method", "", "test"); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	if _, err := buildRequest("bad method", "", make(chan int)); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	r, err := buildRequest("", "", bytes.NewBufferString("test"))
-	if err != nil {
-		t.Error(err)
-	}
-
-	if b, _ := io.ReadAll(r.Body); string(b) != "test" {
-		t.Errorf("expected request body %q; got %q", "test", string(b))
-	}
-}
-
-func TestDoRequest(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("gave no panic; want panic")
-		}
-	}()
-	if r := doRequest("bad method", "", nil, nil, nil); r.Error == nil {
-		t.Error("gave nil error; want error")
-	}
-	doRequest("GET", "", nil, nil, nil)
-}
-
-type errReader int
-
-func (errReader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("test error")
-}
-func (errReader) Close() error { return nil }
-
-func TestBytes(t *testing.T) {
-	r := &Response{Error: errors.New("test")}
-	if b := r.Bytes(); b != nil {
-		t.Error("gave non nil bytes; want nil")
-	}
-	r = &Response{Response: &http.Response{Body: errReader(0)}}
-	if b := r.Bytes(); b != nil {
-		t.Error("gave non nil bytes; want nil")
-	}
-	r = &Response{
-		Response: &http.Response{
-			Header: http.Header{"Content-Encoding": []string{"gzip"}},
-			Body:   errReader(0),
-		},
-	}
-	if b := r.Bytes(); b != nil {
-		t.Error("gave non nil bytes; want nil")
-	}
-
-	var buf bytes.Buffer
-	zw := gzip.NewWriter(&buf)
-	zw.Write([]byte("test"))
-	zw.Close()
-	r = &Response{
-		Response: &http.Response{
-			Header: http.Header{"Content-Encoding": []string{"gzip"}},
-			Body:   io.NopCloser(&buf),
-		},
-	}
-	if b := r.String(); b != "test" {
-		t.Errorf("expected %q; got %q", "test", b)
-	}
-	if b := r.String(); b != "test" { // cached
-		t.Errorf("expected %q; got %q", "test", b)
-	}
-
-	fw, _ := flate.NewWriter(&buf, -1)
-	fw.Write([]byte("deflate"))
-	fw.Close()
-	r = &Response{
-		Response: &http.Response{
-			Header: http.Header{"Content-Encoding": []string{"deflate"}},
-			Body:   io.NopCloser(&buf),
-		},
-	}
-	if b := r.String(); b != "deflate" {
-		t.Errorf("expected %q; got %q", "deflate", b)
-	}
-}
-
-func TestJSON(t *testing.T) {
-	r := buildResponse(nil, errors.New("test"))
-	if err := r.JSON(nil); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	r = &Response{
-		Response: &http.Response{Body: io.NopCloser(bytes.NewReader([]byte("-1")))},
-	}
-	var data uint
-	if err := r.JSON(&data); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	r = &Response{
-		Response: &http.Response{Body: errReader(0)},
-	}
-	if err := r.JSON(nil); err == nil {
-		t.Error("gave nil error; want error")
-	}
-}
-
-func TestSave(t *testing.T) {
-	r := buildResponse(nil, errors.New("test"))
-	if _, err := r.Save("error"); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	r = &Response{
-		Response: &http.Response{Body: io.NopCloser(bytes.NewBufferString("test"))},
-	}
-	if _, err := r.Save(""); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	f, _ := os.CreateTemp("", "test")
-	f.Close()
-	defer os.Remove(f.Name())
-
-	if n, err := r.Save(f.Name()); err != nil {
-		t.Fatal(err)
-	} else if n != 4 {
-		t.Error(n)
-	}
-	b, err := os.ReadFile(f.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if s := string(b); s != "test" {
-		t.Errorf("expected %q; got %q", "test", s)
-	}
-}
 
 func TestSetProxy(t *testing.T) {
 	if err := SetProxy("://localhost"); err == nil {
@@ -180,4 +32,119 @@ func TestSetClient(t *testing.T) {
 		}
 	}()
 	SetClient(http.DefaultClient)
+}
+
+func TestGetAndHead(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "Hello, world!")
+	}))
+	defer ts.Close()
+
+	SetNoProxy()
+	resp := Get(ts.URL, H{"hello": "world"})
+	if resp.Error != nil {
+		t.Fatal(resp.Error)
+	}
+	if resp.Request.Method != "GET" {
+		t.Errorf("expected method %q; got %q", "GET", resp.Request.Method)
+	}
+	if resp.Request.URL.String() != ts.URL {
+		t.Errorf("expected URL %q; got %q", ts.URL, resp.Request.URL.String())
+	}
+	if h := resp.Request.Header.Get("hello"); h != "world" {
+		t.Errorf("expected hello header %q; got %q", "world", h)
+	}
+	if ua := resp.Request.Header.Get("user-agent"); ua != "Go-HTTP-Client" {
+		t.Errorf("expected user agent %q; got %q", "Go-HTTP-Client", ua)
+	}
+	if s := resp.String(); s != "Hello, world!" {
+		t.Error("Incorrect get response body:", s)
+	}
+
+	resp = Head(ts.URL, H{"hello": "world"})
+	if resp.Error != nil {
+		t.Fatal(resp.Error)
+	}
+	if resp.Request.Method != "HEAD" {
+		t.Errorf("expected method %q; got %q", "HEAD", resp.Request.Method)
+	}
+	if l := resp.Request.ContentLength; l != 0 {
+		t.Error("Incorrect head response body:", l)
+	}
+}
+
+func TestPost(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, _ := io.ReadAll(r.Body)
+		fmt.Fprint(w, string(c))
+	}))
+	defer ts.Close()
+
+	SetAgent("test")
+	resp := Post(ts.URL, H{"hello": "world"}, nil)
+	if resp.Error != nil {
+		t.Fatal(resp.Error)
+	}
+	defer resp.Close()
+	if resp.Request.Method != "POST" {
+		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
+	}
+	if resp.Request.URL.String() != ts.URL {
+		t.Errorf("expected URL %q; got %q", ts.URL, resp.Request.URL.String())
+	}
+	if h := resp.Request.Header.Get("hello"); h != "world" {
+		t.Errorf("expected hello header %q; got %q", "world", h)
+	}
+	if ua := resp.Request.Header.Get("user-agent"); ua != "test" {
+		t.Errorf("expected user agent %q; got %q", "test", ua)
+	}
+	if l := resp.Request.ContentLength; l != 0 {
+		t.Error("Incorrect response body:", l)
+	}
+
+	resp = Post(ts.URL, nil, url.Values{"test": []string{"test"}})
+	if resp.Error != nil {
+		t.Fatal(resp.Error)
+	}
+	defer resp.Close()
+	if ct := resp.Request.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
+		t.Errorf("expected Content-Type header %q; got %q", "application/x-www-form-urlencoded", ct)
+	}
+	if s := resp.String(); s != "test=test" {
+		t.Errorf("expected response body %q; got %q", "test=test", s)
+	}
+
+	resp = Post(ts.URL, nil, map[string]any{"test": "test"})
+	if resp.Error != nil {
+		t.Fatal(resp.Error)
+	}
+	defer resp.Close()
+	if ct := resp.Request.Header.Get("Content-Type"); ct != "application/json" {
+		t.Errorf("expected Content-Type header %q; got %q", "application/json", ct)
+	}
+	var json struct{ Test string }
+	if err := resp.JSON(&json); err != nil {
+		t.Error(err)
+	}
+	if json != struct{ Test string }{Test: "test"} {
+		t.Error("Incorrect response body:", json)
+	}
+}
+
+func TestUpload(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, _ := io.ReadAll(r.Body)
+		fmt.Fprint(w, string(c))
+	}))
+	defer ts.Close()
+
+	resp := Upload(ts.URL, nil, nil, &File{ReadCloser: errReader(0)})
+	if resp.Error == nil {
+		t.Error("gave nil error; want error")
+	}
+
+	resp = Upload(ts.URL, H{"header": "value"}, nil, F("readme", "README.md"))
+	if resp.Error != nil {
+		t.Error(resp.Error)
+	}
 }

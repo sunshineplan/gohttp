@@ -1,21 +1,13 @@
 package gohttp
 
 import (
-	"bytes"
-	"compress/flate"
-	"compress/gzip"
-	"encoding/json"
-	"io"
 	"net/http"
-	"net/url"
-	urlpkg "net/url"
-	"os"
-	"strings"
+	"time"
 )
 
 var (
-	defaultAgent  = "Go-HTTP-Client"
-	defaultClient = http.DefaultClient
+	defaultAgent   = "Go-HTTP-Client"
+	defaultSession = newSession(http.DefaultClient)
 )
 
 // H represents the key-value pairs in an HTTP header.
@@ -37,187 +29,117 @@ func SetAgent(agent string) {
 	}
 }
 
-func setProxy(fn func(*http.Request) (*url.URL, error)) {
-	var tr *http.Transport
-	var ok bool
-	if defaultClient.Transport == nil {
-		if tr, ok = http.DefaultTransport.(*http.Transport); ok {
-			tr.Proxy = fn
-		}
-	} else {
-		if tr, ok = defaultClient.Transport.(*http.Transport); ok {
-			tr.Proxy = fn
-		}
-	}
-	if !ok {
-		panic("Transport is not *http.Transport type")
-	}
-}
-
 // SetProxy sets default client transport proxy.
 func SetProxy(proxy string) error {
-	proxyURL, err := url.Parse(proxy)
-	if err != nil {
-		return err
-	}
-
-	setProxy(http.ProxyURL(proxyURL))
-
-	return nil
+	return defaultSession.SetProxy(proxy)
 }
 
 // SetNoProxy sets default client use no proxy.
 func SetNoProxy() {
-	setProxy(nil)
+	defaultSession.SetNoProxy()
 }
 
 // SetProxyFromEnvironment sets default client use environment proxy.
 func SetProxyFromEnvironment() {
-	setProxy(http.ProxyFromEnvironment)
+	defaultSession.SetProxyFromEnvironment()
+}
+
+// SetTimeout sets default timeout. Zero means no timeout.
+func SetTimeout(d time.Duration) {
+	defaultSession.SetTimeout(d)
 }
 
 // SetClient sets default client.
 func SetClient(c *http.Client) {
-	defaultClient = c
+	defaultSession.SetClient(c)
 }
 
-func buildHeader(headers H) http.Header {
-	h := make(http.Header)
+// Get issues a GET to the specified URL with headers.
+func Get(url string, headers H) *Response {
+	return defaultSession.Get(url, headers)
+}
+
+// Head issues a HEAD to the specified URL with headers.
+func Head(url string, headers H) *Response {
+	return defaultSession.Head(url, headers)
+}
+
+// Post issues a POST to the specified URL with headers.
+// Post data should be one of nil, io.Reader, url.Values, string map or struct.
+func Post(url string, headers H, data any) *Response {
+	return defaultSession.Post(url, headers, data)
+}
+
+// Upload issues a POST to the specified URL with a multipart document.
+func Upload(url string, headers H, params map[string]string, files ...*File) *Response {
+	return defaultSession.Upload(url, headers, params, files...)
+}
+
+// Get issues a session GET to the specified URL with additional headers.
+func (s *Session) Get(url string, headers H) *Response {
+	h := s.Header.Clone()
 	for k, v := range headers {
 		h.Set(k, v)
 	}
-	return h
+	return doRequest("GET", url, h, nil, s.Client)
 }
 
-func buildRequest(method, url string, data any) (*http.Request, error) {
-	var body io.Reader
-	var contentType string
-
-	switch data := data.(type) {
-	case nil:
-	case io.Reader:
-		body = data
-	case urlpkg.Values:
-		body = strings.NewReader(data.Encode())
-		contentType = "application/x-www-form-urlencoded"
-	default:
-		b, err := json.Marshal(data)
-		if err != nil {
-			return nil, err
-		}
-		body = bytes.NewBuffer(b)
-		contentType = "application/json"
+// Head issues a session HEAD to the specified URL with additional headers.
+func (s *Session) Head(url string, headers H) *Response {
+	h := s.Header.Clone()
+	for k, v := range headers {
+		h.Set(k, v)
 	}
-
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, err
-	}
-	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
-	}
-
-	return req, nil
+	return doRequest("HEAD", url, h, nil, s.Client)
 }
 
-func doRequest(method, url string, header http.Header, data any, client *http.Client) *Response {
-	req, err := buildRequest(method, url, data)
+// Post issues a session POST to the specified URL with additional headers.
+func (s *Session) Post(url string, headers H, data any) *Response {
+	h := s.Header.Clone()
+	for k, v := range headers {
+		h.Set(k, v)
+	}
+	return doRequest("POST", url, h, data, s.Client)
+}
+
+// Upload issues a session POST to the specified URL with a multipart document and additional headers.
+func (s *Session) Upload(url string, headers H, params map[string]string, files ...*File) *Response {
+	data, contentType, err := buildMultipart(params, files...)
 	if err != nil {
 		return &Response{Response: new(http.Response), Error: err}
 	}
-
-	for k, v := range defaultHeaders() {
-		req.Header.Set(k, v)
+	h := s.Header.Clone()
+	h.Set("Content-Type", contentType)
+	for k, v := range headers {
+		h.Set(k, v)
 	}
-
-	for k, v := range header {
-		req.Header[k] = v
-	}
-
-	return buildResponse(client.Do(req))
+	return doRequest("POST", url, h, data, s.Client)
 }
 
-// Response represents the response from an HTTP request.
-type Response struct {
-	*http.Response
-	Error  error
-	cached bool
-	bytes  []byte
+// KeepAlive repeatedly calls fn with a fixed interval delay between each call.
+func (s *Session) KeepAlive(interval *time.Duration, fn func(*Session) error) (err error) {
+	for ; err == nil; <-time.After(*interval) {
+		err = fn(s)
+	}
+	return
 }
 
-func buildResponse(resp *http.Response, err error) *Response {
-	if err != nil {
-		return &Response{Response: new(http.Response), Error: err}
-	}
-
-	return &Response{Response: resp}
+// GetWithClient issues a GET to the specified URL with headers and client.
+func GetWithClient(url string, headers H, client *http.Client) *Response {
+	return newSession(client).Get(url, headers)
 }
 
-// Close closes the response body.
-func (r *Response) Close() error {
-	if r.Error == nil && r.Response != nil && r.Body != nil {
-		return r.Body.Close()
-	}
-	return nil
+// HeadWithClient issues a HEAD to the specified URL with headers and client.
+func HeadWithClient(url string, headers H, client *http.Client) *Response {
+	return newSession(client).Head(url, headers)
 }
 
-// Bytes returns a slice of byte of the response body.
-func (r *Response) Bytes() []byte {
-	if r.Error != nil || r.Response == nil || r.Body == nil {
-		return nil
-	}
-	if r.cached {
-		return r.bytes
-	}
-	defer r.Body.Close()
-
-	reader := r.Body
-	switch r.Header.Get("Content-Encoding") {
-	case "gzip":
-		reader, r.Error = gzip.NewReader(reader)
-		if r.Error != nil {
-			return nil
-		}
-	case "deflate":
-		reader = flate.NewReader(reader)
-	}
-
-	r.bytes, r.Error = io.ReadAll(reader)
-	if r.Error != nil {
-		return nil
-	}
-	r.cached = true
-
-	return r.bytes
+// PostWithClient issues a POST to the specified URL with headers and client.
+func PostWithClient(url string, headers H, data any, client *http.Client) *Response {
+	return newSession(client).Post(url, headers, data)
 }
 
-// String returns the contents of the response body as a string.
-func (r *Response) String() string {
-	return string(r.Bytes())
-}
-
-// JSON parses the response body as JSON-encoded data
-// and stores the result in the value pointed to by data.
-func (r *Response) JSON(data any) error {
-	if r.Error != nil {
-		return r.Error
-	}
-
-	return json.Unmarshal(r.Bytes(), data)
-}
-
-// Save saves the response data to file. It returns the number
-// of bytes written and an error, if any.
-func (r *Response) Save(file string) (int, error) {
-	if r.Error != nil {
-		return 0, r.Error
-	}
-
-	f, err := os.Create(file)
-	if err != nil {
-		return 0, err
-	}
-	defer f.Close()
-
-	return f.Write(r.Bytes())
+// UploadWithClient issues a POST to the specified URL with a multipart document and client.
+func UploadWithClient(url string, headers H, params map[string]string, files []*File, client *http.Client) *Response {
+	return newSession(client).Upload(url, headers, params, files...)
 }
