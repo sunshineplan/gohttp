@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"golang.org/x/net/html/charset"
 )
 
 // Response represents the response from an HTTP request.
@@ -43,7 +45,7 @@ func (r *Response) Bytes() []byte {
 	}
 	defer r.Body.Close()
 
-	reader := r.Body
+	var reader io.Reader = r.Body
 	switch r.Header.Get("Content-Encoding") {
 	case "gzip":
 		reader, r.Error = gzip.NewReader(reader)
@@ -54,6 +56,10 @@ func (r *Response) Bytes() []byte {
 		reader = flate.NewReader(reader)
 	}
 
+	reader, r.Error = charset.NewReader(reader, r.Header.Get("Content-Type"))
+	if r.Error != nil {
+		return nil
+	}
 	r.bytes, r.Error = io.ReadAll(reader)
 	if r.Error != nil {
 		return nil
