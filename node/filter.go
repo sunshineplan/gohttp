@@ -6,15 +6,56 @@ import (
 )
 
 var (
-	_ Option = attribute[string]{}
-	_ Option = class[string]{}
-	_ Option = classStrict("")
-	_ Option = text[string]{}
+	_ Filter = everything{}
+	_ Filter = tag[string]{}
+	_ Filter = attribute[string]{}
+	_ Filter = class[string]{}
+	_ Filter = classStrict("")
+	_ Filter = text[string]{}
 )
 
-type Option interface {
-	Name() string
+type Value interface {
+	string | []string | *regexp.Regexp | everything | func(string, Node) bool
+}
+
+type Filter interface {
 	IsMatch(node Node) bool
+}
+
+var True everything
+
+type everything struct{}
+
+func (everything) IsMatch(Node) bool {
+	return true
+}
+
+type tag[T Value] struct {
+	tag T
+}
+
+func Tag[T Value](t T) Filter {
+	return tag[T]{t}
+}
+
+func (tag tag[T]) IsMatch(node Node) bool {
+	switch v := (any(tag.tag)).(type) {
+	case string:
+		return strings.ToLower(v) == node.Raw().Data
+	case []string:
+		for _, v := range v {
+			if strings.ToLower(v) == node.Raw().Data {
+				return true
+			}
+		}
+	case *regexp.Regexp:
+		return v.MatchString(node.Raw().Data)
+	case everything:
+		return true
+	case func(string, Node) bool:
+		return v(node.Raw().Data, node)
+	}
+	return false
 }
 
 type attribute[T Value] struct {
@@ -22,28 +63,24 @@ type attribute[T Value] struct {
 	value T
 }
 
-func Attr[T Value](name string, value T) Option {
+func Attr[T Value](name string, value T) Filter {
 	return attribute[T]{strings.ToLower(name), value}
-}
-
-func (attribute attribute[T]) Name() string {
-	return attribute.name
 }
 
 func (attribute attribute[T]) IsMatch(node Node) bool {
 	switch v := (any(attribute.value)).(type) {
 	case string:
-		if name := attribute.Name(); name == "class" {
+		if attribute.name == "class" {
 			return class[T]{attribute.value}.IsMatch(node)
-		} else if value, ok := getAttribute(node, name); !ok {
+		} else if value, ok := getAttribute(node, attribute.name); !ok {
 			return false
 		} else {
 			return value == v
 		}
 	case []string:
-		if name := attribute.Name(); name == "class" {
+		if attribute.name == "class" {
 			return class[T]{attribute.value}.IsMatch(node)
-		} else if value, ok := getAttribute(node, name); !ok {
+		} else if value, ok := getAttribute(node, attribute.name); !ok {
 			return false
 		} else {
 			for _, v := range v {
@@ -53,16 +90,16 @@ func (attribute attribute[T]) IsMatch(node Node) bool {
 			}
 		}
 	case *regexp.Regexp:
-		if value, ok := getAttribute(node, attribute.Name()); !ok {
+		if value, ok := getAttribute(node, attribute.name); !ok {
 			return false
 		} else {
 			return v.MatchString(value)
 		}
-	case bool:
-		_, ok := getAttribute(node, attribute.Name())
-		return v == ok
+	case everything:
+		_, ok := getAttribute(node, attribute.name)
+		return ok
 	case func(string, Node) bool:
-		if value, ok := getAttribute(node, attribute.Name()); !ok {
+		if value, ok := getAttribute(node, attribute.name); !ok {
 			return false
 		} else {
 			return v(value, node)
@@ -72,21 +109,17 @@ func (attribute attribute[T]) IsMatch(node Node) bool {
 }
 
 type class[T Value] struct {
-	value T
+	class T
 }
 
-func Class[T Value](v T) Option {
+func Class[T Value](v T) Filter {
 	return class[T]{v}
 }
 
-func (class[T]) Name() string {
-	return "class"
-}
-
 func (cls class[T]) IsMatch(node Node) bool {
-	switch v := (any(cls.value)).(type) {
+	switch v := (any(cls.class)).(type) {
 	case string:
-		nodeClass, ok := getAttribute(node, cls.Name())
+		nodeClass, ok := getAttribute(node, "class")
 		if !ok {
 			return false
 		}
@@ -105,7 +138,7 @@ func (cls class[T]) IsMatch(node Node) bool {
 		}
 		return true
 	case []string:
-		if _, ok := getAttribute(node, cls.Name()); !ok {
+		if _, ok := getAttribute(node, "class"); !ok {
 			return false
 		}
 		for _, v := range v {
@@ -115,22 +148,18 @@ func (cls class[T]) IsMatch(node Node) bool {
 		}
 		return false
 	default:
-		return attribute[T]{"class", cls.value}.IsMatch(node)
+		return attribute[T]{"class", cls.class}.IsMatch(node)
 	}
 }
 
 type classStrict string
 
-func ClassStrict(cls string) Option {
+func ClassStrict(cls string) Filter {
 	return classStrict(cls)
 }
 
-func (classStrict) Name() string {
-	return "class"
-}
-
 func (classStrict classStrict) IsMatch(node Node) bool {
-	nodeClass, ok := getAttribute(node, classStrict.Name())
+	nodeClass, ok := getAttribute(node, "class")
 	if !ok {
 		return false
 	}
@@ -142,16 +171,12 @@ type text[T Value] struct {
 	text T
 }
 
-func Text[T Value](t T) Option {
+func Text[T Value](t T) Filter {
 	return text[T]{t}
 }
 
-func String[T Value](t T) Option {
+func String[T Value](t T) Filter {
 	return Text(t)
-}
-
-func (text[T]) Name() string {
-	return "text"
 }
 
 func (text text[T]) IsMatch(node Node) bool {
@@ -166,7 +191,7 @@ func (text text[T]) IsMatch(node Node) bool {
 		}
 	case *regexp.Regexp:
 		return v.MatchString(node.Text())
-	case bool:
+	case everything:
 		return node.Text() != ""
 	case func(string, Node) bool:
 		return v(node.Text(), node)
@@ -175,11 +200,10 @@ func (text text[T]) IsMatch(node Node) bool {
 }
 
 func getAttribute(node Node, name string) (string, bool) {
-	if attr := node.Attr(); attr == nil {
-		return "", false
-	} else if attr, ok := attr.Get(name); !ok || attr == "" {
+	if attr := node.Attrs(); attr == nil {
 		return "", false
 	} else {
-		return attr, true
+		attr, ok := attr.Get(name)
+		return attr, ok
 	}
 }

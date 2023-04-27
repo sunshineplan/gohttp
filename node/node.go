@@ -19,29 +19,40 @@ type Node interface {
 	PrevSibling() Node
 	NextSibling() Node
 
-	ParentElement() Node
-	PrevSiblingElement() Node
-	NextSiblingElement() Node
-
-	Attr() Attributes
+	Attrs() Attributes
 	Text() string
 	HTML() string
 	FullText() string
 
-	Find(TagOption, ...Option) Node
-	FindAll(TagOption, ...Option) []Node
+	Find(Filter, ...Filter) Node
+	FindN(int, Filter, ...Filter) []Node
+	FindAll(Filter, ...Filter) []Node
+	FindParent(Filter, ...Filter) Node
+	FindParentsN(int, Filter, ...Filter) []Node
+	FindParents(Filter, ...Filter) []Node
+	FindPrevSibling(Filter, ...Filter) Node
+	FindPrevSiblingsN(int, Filter, ...Filter) []Node
+	FindPrevSiblings(Filter, ...Filter) []Node
+	FindNextSibling(Filter, ...Filter) Node
+	FindNextSiblingsN(int, Filter, ...Filter) []Node
+	FindNextSiblings(Filter, ...Filter) []Node
+	FindPrevious(Filter, ...Filter) Node
+	FindPreviousN(int, Filter, ...Filter) []Node
+	FindAllPrevious(Filter, ...Filter) []Node
+	FindNext(Filter, ...Filter) Node
+	FindNextN(int, Filter, ...Filter) []Node
+	FindAllNext(Filter, ...Filter) []Node
 }
 
-func NewNode(node *html.Node) Node {
-	return newNode(node)
+func NewNode(n *html.Node) Node {
+	if n == nil {
+		return nil
+	}
+	return &node{n}
 }
 
 type node struct {
 	*html.Node
-}
-
-func newNode(n *html.Node) *node {
-	return &node{n}
 }
 
 func Parse(r io.Reader) (Node, error) {
@@ -53,7 +64,7 @@ func ParseWithOptions(r io.Reader, opts ...html.ParseOption) (Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newNode(n), nil
+	return NewNode(n), nil
 }
 
 func ParseHTML(s string) (Node, error) {
@@ -65,18 +76,7 @@ func (n *node) Raw() *html.Node {
 }
 
 func (n *node) Parent() Node {
-	if n := n.Node.Parent; n != nil {
-		return newNode(n)
-	}
-	return nil
-}
-
-func (n *node) ParentElement() Node {
-	if node := n.Parent(); node == nil || node.Raw().Type == html.ElementNode {
-		return node
-	} else {
-		return node.ParentElement()
-	}
+	return NewNode(n.Node.Parent)
 }
 
 func (n *node) Children() (children []Node) {
@@ -89,72 +89,22 @@ func (n *node) Children() (children []Node) {
 }
 
 func (n *node) FirstChild() Node {
-	if n := n.Node.FirstChild; n != nil {
-		return newNode(n)
-	}
-	return nil
+	return NewNode(n.Node.FirstChild)
 }
 
 func (n *node) LastChild() Node {
-	if n := n.Node.LastChild; n != nil {
-		return newNode(n)
-	}
-	return nil
+	return NewNode(n.Node.LastChild)
 }
 
 func (n *node) PrevSibling() Node {
-	if n := n.Node.PrevSibling; n != nil {
-		return newNode(n)
-	}
-	return nil
+	return NewNode(n.Node.PrevSibling)
 }
 
 func (n *node) NextSibling() Node {
-	if n := n.Node.NextSibling; n != nil {
-		return newNode(n)
-	}
-	return nil
+	return NewNode(n.Node.NextSibling)
 }
 
-func (n *node) PrevSiblingElement() Node {
-	if node := n.PrevSibling(); node == nil || node.Raw().Type == html.ElementNode {
-		return node
-	} else {
-		return node.PrevSiblingElement()
-	}
-}
-
-func (n *node) NextSiblingElement() Node {
-	if node := n.NextSibling(); node == nil || node.Raw().Type == html.ElementNode {
-		return node
-	} else {
-		return node.NextSiblingElement()
-	}
-}
-
-type Attributes interface {
-	Range(func(k, v string) bool)
-	Get(string) (string, bool)
-}
-
-var _ Attributes = attributes{}
-
-type attributes map[string]string
-
-func (attrs attributes) Range(f func(string, string) bool) {
-	for k, v := range attrs {
-		if !f(k, v) {
-			break
-		}
-	}
-}
-
-func (attrs attributes) Get(attr string) (string, bool) {
-	v, ok := attrs[attr]
-	return v, ok
-}
-
-func (n *node) Attr() Attributes {
+func (n *node) Attrs() Attributes {
 	if len(n.Node.Attr) == 0 {
 		return nil
 	}

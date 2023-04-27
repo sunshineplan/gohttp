@@ -13,7 +13,8 @@ func Example() {
 		Form struct{ Hello string }
 	}
 	if err := r.JSON(&postResp); err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	fmt.Println(postResp.Form.Hello)
 	// Output: world
@@ -28,7 +29,8 @@ func ExampleUpload() {
 		}
 	}
 	if err := r.JSON(&resp); err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	fmt.Println(strings.Split(resp.Headers.ContentType, ";")[0])
 	// Output:
@@ -44,7 +46,8 @@ func ExampleSession() {
 		Headers struct{ Hello, Cookie string }
 	}
 	if err := r.JSON(&getResp); err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	fmt.Println(getResp.Headers.Hello, getResp.Headers.Cookie)
 	// Output: world name=value

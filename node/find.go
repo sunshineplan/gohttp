@@ -2,61 +2,32 @@ package node
 
 import (
 	"context"
-	"regexp"
-	"strings"
 
 	"golang.org/x/net/html"
 )
 
-var _ TagOption = tag[string]{}
+type findMethod int
 
-type Value interface {
-	string | []string | *regexp.Regexp | bool | func(string, Node) bool
-}
+const (
+	down findMethod = iota
+	up
+	prevSibling
+	nextSibling
+	prev
+	next
+)
 
-type TagOption interface {
-	IsMatch(string, Node) bool
-}
-
-type tag[T Value] struct {
-	tag T
-}
-
-func Tag[T Value](t T) TagOption {
-	return tag[T]{t}
-}
-
-func (tag tag[T]) IsMatch(s string, node Node) bool {
-	switch v := (any(tag.tag)).(type) {
-	case string:
-		return strings.ToLower(v) == s
-	case []string:
-		for _, v := range v {
-			if strings.ToLower(v) == s {
-				return true
-			}
-		}
-	case *regexp.Regexp:
-		return v.MatchString(s)
-	case bool:
-		return v
-	case func(string, Node) bool:
-		return v(s, node)
-	}
-	return false
-}
-
-func (n *node) find(tag TagOption, once bool, opts ...Option) (nodes []Node) {
+func (n *node) find(method findMethod, limit int, tag Filter, filters ...Filter) (nodes []Node) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	var f func(*node, ...Option)
-	f = func(node *node, opts ...Option) {
-		if ctx.Err() != nil {
+	var f func(Node, ...Filter)
+	f = func(node Node, filters ...Filter) {
+		if ctx.Err() != nil || node == nil {
 			return
 		}
-		if raw := node.Raw(); n.Raw() != raw && raw.Type == html.ElementNode && (tag == nil || tag.IsMatch(raw.Data, node)) {
+		if raw := node.Raw(); n.Raw() != raw && raw.Type == html.ElementNode && (tag == nil || tag.IsMatch(node)) {
 			ok := true
-			for _, i := range opts {
+			for _, i := range filters {
 				if !i.IsMatch(node) {
 					ok = false
 					break
@@ -64,27 +35,141 @@ func (n *node) find(tag TagOption, once bool, opts ...Option) (nodes []Node) {
 			}
 			if ok {
 				nodes = append(nodes, node)
-				if once {
+				if len(nodes) == limit {
 					cancel()
 				}
 			}
 		}
-		for node := node.FirstChild(); node != nil; node = node.NextSiblingElement() {
-			f(newNode(node.Raw()), opts...)
+		switch method {
+		case down:
+			for node := node.FirstChild(); node != nil; node = node.NextSibling() {
+				f(NewNode(node.Raw()), filters...)
+			}
+		case up:
+			for node := node.Parent(); node != nil; node = node.Parent() {
+				f(NewNode(node.Raw()), filters...)
+			}
+		case prevSibling:
+			for node := node.PrevSibling(); node != nil; node = node.PrevSibling() {
+				f(NewNode(node.Raw()), filters...)
+			}
+		case nextSibling:
+			for node := node.NextSibling(); node != nil; node = node.NextSibling() {
+				f(NewNode(node.Raw()), filters...)
+			}
+		case prev:
+			for {
+				prev := node.PrevSibling()
+				if prev == nil {
+					if prev = node.Parent(); prev == nil {
+						return
+					}
+				}
+				f(NewNode(prev.Raw()), filters...)
+			}
+		case next:
+			for {
+				next := node.FirstChild()
+				if next == nil {
+					if next = node.NextSibling(); next == nil {
+						if parent := node.Parent(); parent != nil {
+							if next = parent.NextSibling(); next == nil {
+								return
+							}
+						}
+					}
+				}
+				f(NewNode(next.Raw()), filters...)
+			}
 		}
 	}
-	f(n, opts...)
+	f(n, filters...)
 	return
 }
 
-func (n *node) Find(tag TagOption, opts ...Option) Node {
-	nodes := n.find(tag, true, opts...)
+func (n *node) findOnce(method findMethod, tag Filter, filters ...Filter) Node {
+	nodes := n.find(method, 1, tag, filters...)
 	if len(nodes) == 0 {
 		return nil
 	}
 	return nodes[0]
 }
 
-func (n *node) FindAll(tag TagOption, opts ...Option) []Node {
-	return n.find(tag, false, opts...)
+func (n *node) findN(method findMethod, limit int, tag Filter, filters ...Filter) []Node {
+	if limit <= 0 {
+		return nil
+	}
+	return n.find(method, limit, tag, filters...)
+}
+
+func (n *node) Find(tag Filter, filters ...Filter) Node {
+	return n.findOnce(down, tag, filters...)
+}
+
+func (n *node) FindN(limit int, tag Filter, filters ...Filter) []Node {
+	return n.findN(down, limit, tag, filters...)
+}
+
+func (n *node) FindAll(tag Filter, filters ...Filter) []Node {
+	return n.find(down, 0, tag, filters...)
+}
+
+func (n *node) FindParent(tag Filter, filters ...Filter) Node {
+	return n.findOnce(up, tag, filters...)
+}
+
+func (n *node) FindParentsN(limit int, tag Filter, filters ...Filter) []Node {
+	return n.findN(up, limit, tag, filters...)
+}
+
+func (n *node) FindParents(tag Filter, filters ...Filter) []Node {
+	return n.find(up, 0, tag, filters...)
+}
+
+func (n *node) FindPrevSibling(tag Filter, filters ...Filter) Node {
+	return n.findOnce(prevSibling, tag, filters...)
+}
+
+func (n *node) FindPrevSiblingsN(limit int, tag Filter, filters ...Filter) []Node {
+	return n.findN(prevSibling, limit, tag, filters...)
+}
+
+func (n *node) FindPrevSiblings(tag Filter, filters ...Filter) []Node {
+	return n.find(prevSibling, 0, tag, filters...)
+}
+
+func (n *node) FindNextSibling(tag Filter, filters ...Filter) Node {
+	return n.findOnce(nextSibling, tag, filters...)
+}
+
+func (n *node) FindNextSiblingsN(limit int, tag Filter, filters ...Filter) []Node {
+	return n.findN(nextSibling, limit, tag, filters...)
+}
+
+func (n *node) FindNextSiblings(tag Filter, filters ...Filter) []Node {
+	return n.find(nextSibling, 0, tag, filters...)
+}
+
+func (n *node) FindPrevious(tag Filter, filters ...Filter) Node {
+	return n.findOnce(prev, tag, filters...)
+}
+
+func (n *node) FindPreviousN(limit int, tag Filter, filters ...Filter) []Node {
+	return n.findN(prev, limit, tag, filters...)
+}
+
+func (n *node) FindAllPrevious(tag Filter, filters ...Filter) []Node {
+	return n.find(prev, 0, tag, filters...)
+}
+
+func (n *node) FindNext(tag Filter, filters ...Filter) Node {
+	return n.findOnce(next, tag, filters...)
+}
+
+func (n *node) FindNextN(limit int, tag Filter, filters ...Filter) []Node {
+	return n.findN(next, limit, tag, filters...)
+}
+
+func (n *node) FindAllNext(tag Filter, filters ...Filter) []Node {
+	return n.find(next, 0, tag, filters...)
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func TestFind(t *testing.T) {
-	if src, _ := doc.Find(Tag("img")).Attr().Get("src"); src != "images/springsource.png" {
+	if src, _ := doc.Find(Tag("img")).Attrs().Get("src"); src != "images/springsource.png" {
 		t.Errorf("expected src %q; got %q", "images/springsource.png", src)
 	}
 	if text := doc.Find(Tag("a"), Attr("href", "hello")).Text(); text != "servlet" {
@@ -18,17 +18,17 @@ func TestFind(t *testing.T) {
 	if text := multipleClasses.Find(Tag("body")).Find(nil).Text(); text != "Multiple classes" {
 		t.Errorf("expected text %q; got %q", "Multiple classes", text)
 	}
-	if text := doc.Find(nil, Attr("id", "4")).Text(); text != "Last one" {
+	if text := doc.Find(True, Attr("id", "4")).Text(); text != "Last one" {
 		t.Errorf("expected text %q; got %q", "Last one", text)
 	}
-	if id, _ := doc.Find(nil, Text("Last one")).Attr().Get("id"); id != "4" {
+	if id, _ := doc.Find(True, Text("Last one")).Attrs().Get("id"); id != "4" {
 		t.Errorf("expected id %q; got %q", "4", id)
 	}
 }
 
 func TestFindAll(t *testing.T) {
 	for i, div := range doc.FindAll(Tag("div")) {
-		id, _ := div.Attr().Get("id")
+		id, _ := div.Attrs().Get("id")
 		if id, _ := strconv.Atoi(id); id != i {
 			t.Errorf("expected id %d; got %d", i, id)
 		}
