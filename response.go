@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/sunshineplan/gohttp/node"
 	"golang.org/x/net/html/charset"
 )
 
@@ -98,4 +99,9 @@ func (r *Response) Save(file string) (int, error) {
 	defer f.Close()
 
 	return f.Write(r.Bytes())
+}
+
+// Node returns the contents of the response body as a Node.
+func (r *Response) Node() (node.Node, error) {
+	return node.ParseHTML(r.String())
 }

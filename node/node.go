@@ -15,11 +15,11 @@ type Node interface {
 	Parent() Node
 	FirstChild() Node
 	LastChild() Node
+	Children() []Node
 	PrevSibling() Node
 	NextSibling() Node
 
 	ParentElement() Node
-	Children() []Node
 	PrevSiblingElement() Node
 	NextSiblingElement() Node
 
@@ -28,10 +28,8 @@ type Node interface {
 	HTML() string
 	FullText() string
 
-	Find(tag Tag, a ...Attribute) Node
-	FindAll(tag Tag, a ...Attribute) []Node
-	FindStrict(tag Tag, a ...Attribute) Node
-	FindAllStrict(tag Tag, a ...Attribute) []Node
+	Find(TagOption, ...Option) Node
+	FindAll(TagOption, ...Option) []Node
 }
 
 func NewNode(node *html.Node) Node {
@@ -132,6 +130,41 @@ func (n *node) NextSiblingElement() Node {
 	} else {
 		return node.NextSiblingElement()
 	}
+}
+
+type Attributes interface {
+	Range(func(k, v string) bool)
+	Get(string) (string, bool)
+}
+
+var _ Attributes = attributes{}
+
+type attributes map[string]string
+
+func (attrs attributes) Range(f func(string, string) bool) {
+	for k, v := range attrs {
+		if !f(k, v) {
+			break
+		}
+	}
+}
+
+func (attrs attributes) Get(attr string) (string, bool) {
+	v, ok := attrs[attr]
+	return v, ok
+}
+
+func (n *node) Attr() Attributes {
+	if len(n.Node.Attr) == 0 {
+		return nil
+	}
+	attrs := make(attributes)
+	for _, i := range n.Node.Attr {
+		if _, ok := attrs[i.Key]; !ok {
+			attrs[i.Key] = i.Val
+		}
+	}
+	return attrs
 }
 
 func (n *node) Text() string {

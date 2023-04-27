@@ -2,27 +2,67 @@ package node
 
 import (
 	"context"
+	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
 )
 
-type Tag string
+var _ TagOption = tag[string]{}
 
-func (tag Tag) Equal(s string) bool {
-	return tag == "" || strings.ToLower(string(tag)) == s
+type Value interface {
+	string | []string | *regexp.Regexp | bool | func(string, Node) bool
 }
 
-func (n *node) find(tag Tag, once, strict bool, a ...Attribute) (nodes []Node) {
+type TagOption interface {
+	IsMatch(string, Node) bool
+}
+
+type tag[T Value] struct {
+	tag T
+}
+
+func Tag[T Value](t T) TagOption {
+	return tag[T]{t}
+}
+
+func (tag tag[T]) IsMatch(s string, node Node) bool {
+	switch v := (any(tag.tag)).(type) {
+	case string:
+		return strings.ToLower(v) == s
+	case []string:
+		for _, v := range v {
+			if strings.ToLower(v) == s {
+				return true
+			}
+		}
+	case *regexp.Regexp:
+		return v.MatchString(s)
+	case bool:
+		return v
+	case func(string, Node) bool:
+		return v(s, node)
+	}
+	return false
+}
+
+func (n *node) find(tag TagOption, once bool, opts ...Option) (nodes []Node) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	var f func(*node, ...Attribute)
-	f = func(node *node, a ...Attribute) {
+	var f func(*node, ...Option)
+	f = func(node *node, opts ...Option) {
 		if ctx.Err() != nil {
 			return
 		}
-		if raw := node.Raw(); n.Raw() != raw && raw.Type == html.ElementNode && tag.Equal(raw.Data) {
-			if node.compareAttribute(strict, a...) {
+		if raw := node.Raw(); n.Raw() != raw && raw.Type == html.ElementNode && (tag == nil || tag.IsMatch(raw.Data, node)) {
+			ok := true
+			for _, i := range opts {
+				if !i.IsMatch(node) {
+					ok = false
+					break
+				}
+			}
+			if ok {
 				nodes = append(nodes, node)
 				if once {
 					cancel()
@@ -30,33 +70,21 @@ func (n *node) find(tag Tag, once, strict bool, a ...Attribute) (nodes []Node) {
 			}
 		}
 		for node := node.FirstChild(); node != nil; node = node.NextSiblingElement() {
-			f(newNode(node.Raw()), a...)
+			f(newNode(node.Raw()), opts...)
 		}
 	}
-	f(n, a...)
+	f(n, opts...)
 	return
 }
 
-func (n *node) Find(tag Tag, a ...Attribute) Node {
-	nodes := n.find(tag, true, false, a...)
+func (n *node) Find(tag TagOption, opts ...Option) Node {
+	nodes := n.find(tag, true, opts...)
 	if len(nodes) == 0 {
 		return nil
 	}
 	return nodes[0]
 }
 
-func (n *node) FindAll(tag Tag, a ...Attribute) []Node {
-	return n.find(tag, false, false, a...)
-}
-
-func (n *node) FindStrict(tag Tag, a ...Attribute) Node {
-	nodes := n.find(tag, true, true, a...)
-	if len(nodes) == 0 {
-		return nil
-	}
-	return nodes[0]
-}
-
-func (n *node) FindAllStrict(tag Tag, a ...Attribute) []Node {
-	return n.find(tag, false, true, a...)
+func (n *node) FindAll(tag TagOption, opts ...Option) []Node {
+	return n.find(tag, false, opts...)
 }

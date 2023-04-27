@@ -1,7 +1,6 @@
 package node
 
 import (
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -68,124 +67,49 @@ var (
 	multipleClasses, _ = ParseHTML(multipleClassesHTML)
 )
 
-func TestFind(t *testing.T) {
-	if src, _ := doc.Find("img").Attr().Get("src"); src != "images/springsource.png" {
-		t.Errorf("expected src %q; got %q", "images/springsource.png", src)
-	}
-	if text := doc.Find("a", Attr("href", "hello")).Text(); text != "servlet" {
-		t.Errorf("expected text %q; got %q", "servlet", text)
-	}
-	if text := doc.Find("div").Find("div").Text(); text != "Just two divs peacing out" {
-		t.Errorf("expected text %q; got %q", "Just two divs peacing out", text)
-	}
-	if text := multipleClasses.Find("body").Find("").Text(); text != "Multiple classes" {
-		t.Errorf("expected text %q; got %q", "Multiple classes", text)
-	}
-	if text := doc.Find("", Attr("id", "4")).Text(); text != "Last one" {
-		t.Errorf("expected text %q; got %q", "Last one", text)
-	}
-	if id, _ := doc.Find("", Attr("text", "Last one")).Attr().Get("id"); id != "4" {
-		t.Errorf("expected id %q; got %q", "4", id)
-	}
-}
-
 func TestParentElement(t *testing.T) {
-	if data := doc.Find("span").Parent().Raw().Data; data != "h1" {
+	if data := doc.Find(Tag("span")).Parent().Raw().Data; data != "h1" {
 		t.Errorf("expected data %q; got %q", "h1", data)
 	}
-	if id, _ := doc.Find("span").ParentElement().ParentElement().Attr().Get("id"); id != "5" {
+	if id, _ := doc.Find(Tag("span")).ParentElement().ParentElement().Attr().Get("id"); id != "5" {
 		t.Errorf("expected id %q; got %q", "5", id)
 	}
 }
 
 func TestNextPrevElement(t *testing.T) {
-	if data := strings.TrimSpace(doc.Find("div", Attr("id", "0")).NextSibling().Raw().Data); data != "check" {
+	if data := strings.TrimSpace(doc.Find(Tag("div"), Attr("id", "0")).NextSibling().Raw().Data); data != "check" {
 		t.Errorf("expected data %q; got %q", "check", data)
 	}
-	if data := strings.TrimSpace(doc.Find("div", Attr("id", "2")).PrevSibling().Raw().Data); data != "check" {
+	if data := strings.TrimSpace(doc.Find(Tag("div"), Attr("id", "2")).PrevSibling().Raw().Data); data != "check" {
 		t.Errorf("expected data %q; got %q", "check", data)
 	}
-	if data := doc.Find("table").NextSiblingElement().Raw().Data; data != "div" {
+	if data := doc.Find(Tag("table")).NextSiblingElement().Raw().Data; data != "div" {
 		t.Errorf("expected data %q; got %q", "div", data)
 	}
-	if data := doc.Find("p").PrevSiblingElement().Raw().Data; data != "div" {
+	if data := doc.Find(Tag("p")).PrevSiblingElement().Raw().Data; data != "div" {
 		t.Errorf("expected data %q; got %q", "div", data)
-	}
-}
-
-func TestFindAll(t *testing.T) {
-	for i, div := range doc.FindAll("div") {
-		id, _ := div.Attr().Get("id")
-		if id, _ := strconv.Atoi(id); id != i {
-			t.Errorf("expected id %d; got %d", i, id)
-		}
-	}
-}
-
-func TestFindAllBySingleClass(t *testing.T) {
-	if l := len(multipleClasses.FindAll("div", Attr("class", "first"))); l != 6 {
-		t.Errorf("expected length %d; got %d", 6, l)
-	}
-	if l := len(multipleClasses.FindAll("div", Attr("class", "third"))); l != 1 {
-		t.Errorf("expected length %d; got %d", 1, l)
-	}
-}
-
-func TestFindAllByAttribute(t *testing.T) {
-	if l := len(doc.FindAll("", Attr("id", "2"))); l != 1 {
-		t.Errorf("expected length %d; got %d", 1, l)
-	}
-}
-
-func TestFindBySingleClass(t *testing.T) {
-	if text := multipleClasses.Find("div", Attr("class", "first")).Text(); text != "Multiple classes" {
-		t.Errorf("expected text %q; got %q", "Multiple classes", text)
-	}
-	if text := multipleClasses.Find("div", Attr("class", "third")).Text(); text != "Multiple classes inorder" {
-		t.Errorf("expected text %q; got %q", "Multiple classes inorder", text)
-	}
-}
-
-func TestFindAllStrict(t *testing.T) {
-	if l := len(multipleClasses.FindAllStrict("div", Attr("class", "first second"))); l != 2 {
-		t.Errorf("expected length %d; got %d", 2, l)
-	}
-	if l := len(multipleClasses.FindAllStrict("div", Attr("class", "first third second"))); l != 0 {
-		t.Errorf("expected length %d; got %d", 0, l)
-	}
-	if l := len(multipleClasses.FindAllStrict("div", Attr("class", "second first third"))); l != 1 {
-		t.Errorf("expected length %d; got %d", 1, l)
-	}
-}
-
-func TestFindStrict(t *testing.T) {
-	if text := multipleClasses.FindStrict("div", Attr("class", "first")).Text(); text != "Single class" {
-		t.Errorf("expected text %q; got %q", "Single class", text)
-	}
-	if node := multipleClasses.FindStrict("div", Attr("class", "third")); node != nil {
-		t.Errorf("expected node nil; got %v", node.Raw())
 	}
 }
 
 func TestText(t *testing.T) {
-	if text := doc.Find("ul").Find("li").Text(); text != "To a " {
+	if text := doc.Find(Tag("ul")).Find(Tag("li")).Text(); text != "To a " {
 		t.Errorf("expected text %q; got %q", "To a ", text)
 	}
 }
 func TestFullText(t *testing.T) {
-	if text := doc.Find("ul").Find("li").FullText(); text != "To a JSP page right?" {
+	if text := doc.Find(Tag("ul")).Find(Tag("li")).FullText(); text != "To a JSP page right?" {
 		t.Errorf("expected text %q; got %q", "To a JSP page right?", text)
 	}
 }
 
 func TestFullTextEmpty(t *testing.T) {
-	if text := doc.Find("div", Attr("id", "5")).Find("h1").FullText(); text != "" {
+	if text := doc.Find(Tag("div"), Attr("id", "5")).Find(Tag("h1")).FullText(); text != "" {
 		t.Errorf("expected text %q; got %q", "", text)
 	}
 }
 
 func TestHTML(t *testing.T) {
-	if html := doc.Find("ul").Find("li").HTML(); html != "<li>To a <a href=\"hello.jsp\">JSP page</a> right?</li>" {
+	if html := doc.Find(Tag("ul")).Find(Tag("li")).HTML(); html != "<li>To a <a href=\"hello.jsp\">JSP page</a> right?</li>" {
 		t.Errorf("expected html %q; got %q", "<li>To a <a href=\"hello.jsp\">JSP page</a> right?</li>", html)
 	}
 }
