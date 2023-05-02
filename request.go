@@ -2,6 +2,7 @@ package gohttp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 	"strings"
 )
 
-func buildRequest(method, reqURL string, data any) (*http.Request, error) {
+func buildRequest(ctx context.Context, method, reqURL string, data any) (*http.Request, error) {
 	var body io.Reader
 	var contentType string
 
@@ -29,7 +30,7 @@ func buildRequest(method, reqURL string, data any) (*http.Request, error) {
 		contentType = "application/json"
 	}
 
-	req, err := http.NewRequest(method, reqURL, body)
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +41,8 @@ func buildRequest(method, reqURL string, data any) (*http.Request, error) {
 	return req, nil
 }
 
-func doRequest(method, url string, header http.Header, data any, client *http.Client) *Response {
-	req, err := buildRequest(method, url, data)
+func doRequest(ctx context.Context, method, url string, header http.Header, data any, client *http.Client) *Response {
+	req, err := buildRequest(ctx, method, url, data)
 	if err != nil {
 		return &Response{Response: new(http.Response), Error: err}
 	}

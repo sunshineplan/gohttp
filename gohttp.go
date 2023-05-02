@@ -1,6 +1,7 @@
 package gohttp
 
 import (
+	"context"
 	"net/http"
 	"time"
 )
@@ -59,9 +60,19 @@ func Get(url string, headers H) *Response {
 	return defaultSession.Get(url, headers)
 }
 
+// GetWithContext issues a GET to the specified URL with context and headers.
+func GetWithContext(ctx context.Context, url string, headers H) *Response {
+	return defaultSession.GetWithContext(ctx, url, headers)
+}
+
 // Head issues a HEAD to the specified URL with headers.
 func Head(url string, headers H) *Response {
 	return defaultSession.Head(url, headers)
+}
+
+// HeadWithContext issues a HEAD to the specified URL with context and headers.
+func HeadWithContext(ctx context.Context, url string, headers H) *Response {
+	return defaultSession.HeadWithContext(ctx, url, headers)
 }
 
 // Post issues a POST to the specified URL with headers.
@@ -70,40 +81,80 @@ func Post(url string, headers H, data any) *Response {
 	return defaultSession.Post(url, headers, data)
 }
 
+// PostWithContext issues a POST to the specified URL with context and headers.
+// Post data should be one of nil, io.Reader, url.Values, string map or struct.
+func PostWithContext(ctx context.Context, url string, headers H, data any) *Response {
+	return defaultSession.PostWithContext(ctx, url, headers, data)
+}
+
 // Upload issues a POST to the specified URL with a multipart document.
 func Upload(url string, headers H, params map[string]string, files ...*File) *Response {
 	return defaultSession.Upload(url, headers, params, files...)
 }
 
+// UploadWithContext issues a POST to the specified URL with context and a multipart document.
+func UploadWithContext(ctx context.Context, url string, headers H, params map[string]string, files ...*File) *Response {
+	return defaultSession.UploadWithContext(ctx, url, headers, params, files...)
+}
+
 // Get issues a session GET to the specified URL with additional headers.
 func (s *Session) Get(url string, headers H) *Response {
+	return s.GetWithContext(context.Background(), url, headers)
+}
+
+// GetWithContext issues a session GET to the specified URL with context and additional headers.
+func (s *Session) GetWithContext(ctx context.Context, url string, headers H) *Response {
 	h := s.Header.Clone()
 	for k, v := range headers {
 		h.Set(k, v)
 	}
-	return doRequest("GET", url, h, nil, s.Client)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return doRequest(ctx, "GET", url, h, nil, s.Client)
 }
 
 // Head issues a session HEAD to the specified URL with additional headers.
 func (s *Session) Head(url string, headers H) *Response {
+	return s.HeadWithContext(context.Background(), url, headers)
+}
+
+// HeadWithContext issues a session HEAD to the specified URL with context and additional headers.
+func (s *Session) HeadWithContext(ctx context.Context, url string, headers H) *Response {
 	h := s.Header.Clone()
 	for k, v := range headers {
 		h.Set(k, v)
 	}
-	return doRequest("HEAD", url, h, nil, s.Client)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return doRequest(ctx, "HEAD", url, h, nil, s.Client)
 }
 
 // Post issues a session POST to the specified URL with additional headers.
 func (s *Session) Post(url string, headers H, data any) *Response {
+	return s.PostWithContext(context.Background(), url, headers, data)
+}
+
+// PostWithContext issues a session POST to the specified URL with context and additional headers.
+func (s *Session) PostWithContext(ctx context.Context, url string, headers H, data any) *Response {
 	h := s.Header.Clone()
 	for k, v := range headers {
 		h.Set(k, v)
 	}
-	return doRequest("POST", url, h, data, s.Client)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return doRequest(ctx, "POST", url, h, data, s.Client)
 }
 
 // Upload issues a session POST to the specified URL with a multipart document and additional headers.
 func (s *Session) Upload(url string, headers H, params map[string]string, files ...*File) *Response {
+	return s.UploadWithContext(context.Background(), url, headers, params, files...)
+}
+
+// UploadWithContext issues a session POST to the specified URL with context, a multipart document and additional headers.
+func (s *Session) UploadWithContext(ctx context.Context, url string, headers H, params map[string]string, files ...*File) *Response {
 	data, contentType, err := buildMultipart(params, files...)
 	if err != nil {
 		return &Response{Response: new(http.Response), Error: err}
@@ -113,7 +164,10 @@ func (s *Session) Upload(url string, headers H, params map[string]string, files 
 	for k, v := range headers {
 		h.Set(k, v)
 	}
-	return doRequest("POST", url, h, data, s.Client)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return doRequest(ctx, "POST", url, h, data, s.Client)
 }
 
 // KeepAlive repeatedly calls fn with a fixed interval delay between each call.
@@ -124,22 +178,22 @@ func (s *Session) KeepAlive(interval *time.Duration, fn func(*Session) error) (e
 	return
 }
 
-// GetWithClient issues a GET to the specified URL with headers and client.
-func GetWithClient(url string, headers H, client *http.Client) *Response {
-	return newSession(client).Get(url, headers)
+// GetWithClient issues a GET to the specified URL with context, headers and client.
+func GetWithClient(ctx context.Context, url string, headers H, client *http.Client) *Response {
+	return newSession(client).GetWithContext(ctx, url, headers)
 }
 
-// HeadWithClient issues a HEAD to the specified URL with headers and client.
-func HeadWithClient(url string, headers H, client *http.Client) *Response {
-	return newSession(client).Head(url, headers)
+// HeadWithClient issues a HEAD to the specified URL with context, headers and client.
+func HeadWithClient(ctx context.Context, url string, headers H, client *http.Client) *Response {
+	return newSession(client).HeadWithContext(ctx, url, headers)
 }
 
-// PostWithClient issues a POST to the specified URL with headers and client.
-func PostWithClient(url string, headers H, data any, client *http.Client) *Response {
-	return newSession(client).Post(url, headers, data)
+// PostWithClient issues a POST to the specified URL with context, headers and client.
+func PostWithClient(ctx context.Context, url string, headers H, data any, client *http.Client) *Response {
+	return newSession(client).PostWithContext(ctx, url, headers, data)
 }
 
-// UploadWithClient issues a POST to the specified URL with a multipart document and client.
-func UploadWithClient(url string, headers H, params map[string]string, files []*File, client *http.Client) *Response {
-	return newSession(client).Upload(url, headers, params, files...)
+// UploadWithClient issues a POST to the specified URL with context, a multipart document and client.
+func UploadWithClient(ctx context.Context, url string, headers H, params map[string]string, files []*File, client *http.Client) *Response {
+	return newSession(client).UploadWithContext(ctx, url, headers, params, files...)
 }

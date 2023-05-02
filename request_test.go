@@ -2,25 +2,26 @@ package gohttp
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/url"
 	"testing"
 )
 
 func TestBuildRequest(t *testing.T) {
-	if _, err := buildRequest("bad method", "", url.Values{}); err == nil {
+	if _, err := buildRequest(context.Background(), "bad method", "", url.Values{}); err == nil {
 		t.Error("gave nil error; want error")
 	}
 
-	if _, err := buildRequest("bad method", "", "test"); err == nil {
+	if _, err := buildRequest(context.Background(), "bad method", "", "test"); err == nil {
 		t.Error("gave nil error; want error")
 	}
 
-	if _, err := buildRequest("bad method", "", make(chan int)); err == nil {
+	if _, err := buildRequest(context.Background(), "bad method", "", make(chan int)); err == nil {
 		t.Error("gave nil error; want error")
 	}
 
-	r, err := buildRequest("", "", bytes.NewBufferString("test"))
+	r, err := buildRequest(context.Background(), "", "", bytes.NewBufferString("test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -36,8 +37,8 @@ func TestDoRequest(t *testing.T) {
 			t.Fatal("gave no panic; want panic")
 		}
 	}()
-	if r := doRequest("bad method", "", nil, nil, nil); r.Error == nil {
+	if r := doRequest(context.Background(), "bad method", "", nil, nil, nil); r.Error == nil {
 		t.Error("gave nil error; want error")
 	}
-	doRequest("GET", "", nil, nil, nil)
+	doRequest(context.Background(), "GET", "", nil, nil, nil)
 }

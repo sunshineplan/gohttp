@@ -17,7 +17,7 @@ func Example() {
 		return
 	}
 	fmt.Println(postResp.Form.Hello)
-	// Output: world
+	// world
 }
 
 func ExampleUpload() {
@@ -33,7 +33,6 @@ func ExampleUpload() {
 		return
 	}
 	fmt.Println(strings.Split(resp.Headers.ContentType, ";")[0])
-	// Output:
 	// multipart/form-data
 }
 
@@ -50,5 +49,5 @@ func ExampleSession() {
 		return
 	}
 	fmt.Println(getResp.Headers.Hello, getResp.Headers.Cookie)
-	// Output: world name=value
+	// world name=value
 }
