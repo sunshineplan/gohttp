@@ -34,22 +34,22 @@ func TestSession(t *testing.T) {
 	}
 	defer resp.Close()
 
-	if resp.Request.Method != "GET" {
-		t.Errorf("expected method %q; got %q", "GET", resp.Request.Method)
+	if resp.Request().Method != "GET" {
+		t.Errorf("expected method %q; got %q", "GET", resp.Request().Method)
 	}
-	if h := resp.Request.Header.Get("hello"); h != "world" {
+	if h := resp.Request().Header.Get("hello"); h != "world" {
 		t.Errorf("expected hello header %q; got %q", "world", h)
 	}
-	if h := resp.Request.Header.Get("another"); h != "header" {
+	if h := resp.Request().Header.Get("another"); h != "header" {
 		t.Errorf("expected hello header %q; got %q", "header", h)
 	}
 	if c := resp.Cookies()[0]; c.String() != "hello=world" {
 		t.Errorf("expected set cookie %q; got %q", "hello=world", c)
 	}
-	if c, _ := resp.Request.Cookie("one"); c.String() != "one=first" {
+	if c, _ := resp.Request().Cookie("one"); c.String() != "one=first" {
 		t.Errorf("expected cookie %q; got %q", "one=first", c)
 	}
-	if c, _ := resp.Request.Cookie("two"); c.String() != "two=second" {
+	if c, _ := resp.Request().Cookie("two"); c.String() != "two=second" {
 		t.Errorf("expected cookie %q; got %q", "two=second", c)
 	}
 
@@ -58,10 +58,10 @@ func TestSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Close()
-	if resp.Request.Method != "HEAD" {
-		t.Errorf("expected method %q; got %q", "HEAD", resp.Request.Method)
+	if resp.Request().Method != "HEAD" {
+		t.Errorf("expected method %q; got %q", "HEAD", resp.Request().Method)
 	}
-	if c := s.Cookies(resp.Request.URL); len(c) != 3 {
+	if c := s.Cookies(resp.Request().URL); len(c) != 3 {
 		t.Errorf("expected cookies number %d; got %d", 3, len(c))
 	}
 
@@ -69,8 +69,8 @@ func TestSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.Request.Method != "POST" {
-		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
+	if resp.Request().Method != "POST" {
+		t.Errorf("expected method %q; got %q", "POST", resp.Request().Method)
 	}
 	if s := resp.String(); s != "Hello, world!" {
 		t.Errorf("expected response body %q; got %q", "Hello, world!", s)
@@ -89,14 +89,14 @@ func TestSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.Request.Method != "POST" {
-		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
+	if resp.Request().Method != "POST" {
+		t.Errorf("expected method %q; got %q", "POST", resp.Request().Method)
 	}
-	_, params, err := mime.ParseMediaType(resp.Request.Header.Get("Content-Type"))
+	_, params, err := mime.ParseMediaType(resp.Request().Header.Get("Content-Type"))
 	if err != nil {
 		t.Error(err)
 	}
-	mr := multipart.NewReader(resp.Body, params["boundary"])
+	mr := multipart.NewReader(resp, params["boundary"])
 	for {
 		p, err := mr.NextPart()
 		if err == io.EOF {

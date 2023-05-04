@@ -59,5 +59,5 @@ func doRequest(ctx context.Context, method, url string, header http.Header, data
 	if err != nil {
 		return nil, err
 	}
-	return &Response{Response: resp}, nil
+	return buildResponse(resp)
 }

@@ -45,16 +45,16 @@ func TestGetAndHead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.Request.Method != "GET" {
-		t.Errorf("expected method %q; got %q", "GET", resp.Request.Method)
+	if resp.Request().Method != "GET" {
+		t.Errorf("expected method %q; got %q", "GET", resp.Request().Method)
 	}
-	if resp.Request.URL.String() != ts.URL {
-		t.Errorf("expected URL %q; got %q", ts.URL, resp.Request.URL.String())
+	if resp.Request().URL.String() != ts.URL {
+		t.Errorf("expected URL %q; got %q", ts.URL, resp.Request().URL.String())
 	}
-	if h := resp.Request.Header.Get("hello"); h != "world" {
+	if h := resp.Request().Header.Get("hello"); h != "world" {
 		t.Errorf("expected hello header %q; got %q", "world", h)
 	}
-	if ua := resp.Request.Header.Get("user-agent"); ua != "Go-HTTP-Client" {
+	if ua := resp.Request().Header.Get("user-agent"); ua != "Go-HTTP-Client" {
 		t.Errorf("expected user agent %q; got %q", "Go-HTTP-Client", ua)
 	}
 	if s := resp.String(); s != "Hello, world!" {
@@ -65,10 +65,10 @@ func TestGetAndHead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.Request.Method != "HEAD" {
-		t.Errorf("expected method %q; got %q", "HEAD", resp.Request.Method)
+	if resp.Request().Method != "HEAD" {
+		t.Errorf("expected method %q; got %q", "HEAD", resp.Request().Method)
 	}
-	if l := resp.Request.ContentLength; l != 0 {
+	if l := resp.Request().ContentLength; l != 0 {
 		t.Error("Incorrect head response body:", l)
 	}
 }
@@ -86,19 +86,19 @@ func TestPost(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Close()
-	if resp.Request.Method != "POST" {
-		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
+	if resp.Request().Method != "POST" {
+		t.Errorf("expected method %q; got %q", "POST", resp.Request().Method)
 	}
-	if resp.Request.URL.String() != ts.URL {
-		t.Errorf("expected URL %q; got %q", ts.URL, resp.Request.URL.String())
+	if resp.Request().URL.String() != ts.URL {
+		t.Errorf("expected URL %q; got %q", ts.URL, resp.Request().URL.String())
 	}
-	if h := resp.Request.Header.Get("hello"); h != "world" {
+	if h := resp.Request().Header.Get("hello"); h != "world" {
 		t.Errorf("expected hello header %q; got %q", "world", h)
 	}
-	if ua := resp.Request.Header.Get("user-agent"); ua != "test" {
+	if ua := resp.Request().Header.Get("user-agent"); ua != "test" {
 		t.Errorf("expected user agent %q; got %q", "test", ua)
 	}
-	if l := resp.Request.ContentLength; l != 0 {
+	if l := resp.Request().ContentLength; l != 0 {
 		t.Error("Incorrect response body:", l)
 	}
 
@@ -107,7 +107,7 @@ func TestPost(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Close()
-	if ct := resp.Request.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
+	if ct := resp.Request().Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
 		t.Errorf("expected Content-Type header %q; got %q", "application/x-www-form-urlencoded", ct)
 	}
 	if s := resp.String(); s != "test=test" {
@@ -119,7 +119,7 @@ func TestPost(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Close()
-	if ct := resp.Request.Header.Get("Content-Type"); ct != "application/json" {
+	if ct := resp.Request().Header.Get("Content-Type"); ct != "application/json" {
 		t.Errorf("expected Content-Type header %q; got %q", "application/json", ct)
 	}
 	var json struct{ Test string }
