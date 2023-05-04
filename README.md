@@ -32,19 +32,19 @@ A few usage examples can be found below. See the documentation for the full list
 
 ```go
 // HTTP GET request
-r := gohttp.Get("https://api.github.com/user", gohttp.H{"Authorization": "token"})
+r, _ := gohttp.Get("https://api.github.com/user", gohttp.H{"Authorization": "token"})
 fmt.Print(r.StatusCode) // 200
 fmt.Print(r.Header.Get("content-type")) // application/json; charset=utf-8
 fmt.Print(r.String()) // {"type":"User"...
 
 // HTTP POST request
-r = gohttp.Post("https://httpbin.org/post", nil, url.Values{"hello": []string{"world"}})
+r, _ = gohttp.Post("https://httpbin.org/post", nil, url.Values{"hello": []string{"world"}})
 var data struct { Form struct{ Hello string } }
 r.JSON(&data)
 fmt.Println(data.Form.Hello) // world
 
 // Upload File
-r := gohttp.Upload("https://httpbin.org/post", nil, nil, gohttp.F("readme", "README.md"))
+r, _ := gohttp.Upload("https://httpbin.org/post", nil, nil, gohttp.F("readme", "README.md"))
 var resp struct {
     Files   struct{ Readme string }
     Headers struct {
@@ -63,7 +63,7 @@ fmt.Println(strings.Split(resp.Headers.ContentType, ";")[0]) // multipart/form-d
 s := gohttp.NewSession()
 s.Header.Set("hello", "world")
 s.Get("https://httpbin.org/cookies/set/name/value", nil)
-r := s.Get("https://httpbin.org/get", nil)
+r, _ := s.Get("https://httpbin.org/get", nil)
 var data struct { Headers struct{ Hello, Cookie string } }
 r.JSON(&data)
 fmt.Println(data.Headers.Hello)  // world

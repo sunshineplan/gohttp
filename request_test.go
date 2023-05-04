@@ -37,7 +37,7 @@ func TestDoRequest(t *testing.T) {
 			t.Fatal("gave no panic; want panic")
 		}
 	}()
-	if r := doRequest(context.Background(), "bad method", "", nil, nil, nil); r.Error == nil {
+	if _, err := doRequest(context.Background(), "bad method", "", nil, nil, nil); err == nil {
 		t.Error("gave nil error; want error")
 	}
 	doRequest(context.Background(), "GET", "", nil, nil, nil)

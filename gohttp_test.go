@@ -41,9 +41,9 @@ func TestGetAndHead(t *testing.T) {
 	defer ts.Close()
 
 	SetNoProxy()
-	resp := Get(ts.URL, H{"hello": "world"})
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err := Get(ts.URL, H{"hello": "world"})
+	if err != nil {
+		t.Fatal(err)
 	}
 	if resp.Request.Method != "GET" {
 		t.Errorf("expected method %q; got %q", "GET", resp.Request.Method)
@@ -61,9 +61,9 @@ func TestGetAndHead(t *testing.T) {
 		t.Error("Incorrect get response body:", s)
 	}
 
-	resp = Head(ts.URL, H{"hello": "world"})
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err = Head(ts.URL, H{"hello": "world"})
+	if err != nil {
+		t.Fatal(err)
 	}
 	if resp.Request.Method != "HEAD" {
 		t.Errorf("expected method %q; got %q", "HEAD", resp.Request.Method)
@@ -81,9 +81,9 @@ func TestPost(t *testing.T) {
 	defer ts.Close()
 
 	SetAgent("test")
-	resp := Post(ts.URL, H{"hello": "world"}, nil)
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err := Post(ts.URL, H{"hello": "world"}, nil)
+	if err != nil {
+		t.Fatal(err)
 	}
 	defer resp.Close()
 	if resp.Request.Method != "POST" {
@@ -102,9 +102,9 @@ func TestPost(t *testing.T) {
 		t.Error("Incorrect response body:", l)
 	}
 
-	resp = Post(ts.URL, nil, url.Values{"test": []string{"test"}})
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err = Post(ts.URL, nil, url.Values{"test": []string{"test"}})
+	if err != nil {
+		t.Fatal(err)
 	}
 	defer resp.Close()
 	if ct := resp.Request.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
@@ -114,9 +114,9 @@ func TestPost(t *testing.T) {
 		t.Errorf("expected response body %q; got %q", "test=test", s)
 	}
 
-	resp = Post(ts.URL, nil, map[string]any{"test": "test"})
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err = Post(ts.URL, nil, map[string]any{"test": "test"})
+	if err != nil {
+		t.Fatal(err)
 	}
 	defer resp.Close()
 	if ct := resp.Request.Header.Get("Content-Type"); ct != "application/json" {
@@ -138,13 +138,11 @@ func TestUpload(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	resp := Upload(ts.URL, nil, nil, &File{ReadCloser: errReader(0)})
-	if resp.Error == nil {
+	if _, err := Upload(ts.URL, nil, nil, &File{ReadCloser: errReader(0)}); err == nil {
 		t.Error("gave nil error; want error")
 	}
 
-	resp = Upload(ts.URL, H{"header": "value"}, nil, F("readme", "README.md"))
-	if resp.Error != nil {
-		t.Error(resp.Error)
+	if _, err := Upload(ts.URL, H{"header": "value"}, nil, F("readme", "README.md")); err != nil {
+		t.Error(err)
 	}
 }

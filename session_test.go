@@ -28,9 +28,9 @@ func TestSession(t *testing.T) {
 	s.Header.Set("hello", "world")
 	s.SetCookie(tsURL, "one", "first")
 	s.SetCookie(tsURL, "two", "second")
-	resp := s.Get(ts.URL, H{"another": "header"})
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err := s.Get(ts.URL, H{"another": "header"})
+	if err != nil {
+		t.Fatal(err)
 	}
 	defer resp.Close()
 
@@ -53,9 +53,9 @@ func TestSession(t *testing.T) {
 		t.Errorf("expected cookie %q; got %q", "two=second", c)
 	}
 
-	resp = s.Head(ts.URL, H{"another": "header"})
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err = s.Head(ts.URL, H{"another": "header"})
+	if err != nil {
+		t.Fatal(err)
 	}
 	defer resp.Close()
 	if resp.Request.Method != "HEAD" {
@@ -65,9 +65,9 @@ func TestSession(t *testing.T) {
 		t.Errorf("expected cookies number %d; got %d", 3, len(c))
 	}
 
-	resp = s.Post(ts.URL, H{"post": "header"}, bytes.NewBufferString("Hello, world!"))
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err = s.Post(ts.URL, H{"post": "header"}, bytes.NewBufferString("Hello, world!"))
+	if err != nil {
+		t.Fatal(err)
 	}
 	if resp.Request.Method != "POST" {
 		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
@@ -76,8 +76,7 @@ func TestSession(t *testing.T) {
 		t.Errorf("expected response body %q; got %q", "Hello, world!", s)
 	}
 
-	resp = s.Upload(ts.URL, nil, nil, &File{ReadCloser: errReader(0)})
-	if resp.Error == nil {
+	if _, err := s.Upload(ts.URL, nil, nil, &File{ReadCloser: errReader(0)}); err == nil {
 		t.Error("gave nil error; want error")
 	}
 
@@ -86,9 +85,9 @@ func TestSession(t *testing.T) {
 	f.Close()
 	defer os.Remove(f.Name())
 
-	resp = s.Upload(ts.URL, H{"upload": "header"}, map[string]string{"param": "test"}, F("file1", f.Name()), nil, F("file2", f.Name()))
-	if resp.Error != nil {
-		t.Fatal(resp.Error)
+	resp, err = s.Upload(ts.URL, H{"upload": "header"}, map[string]string{"param": "test"}, F("file1", f.Name()), nil, F("file2", f.Name()))
+	if err != nil {
+		t.Fatal(err)
 	}
 	if resp.Request.Method != "POST" {
 		t.Errorf("expected method %q; got %q", "POST", resp.Request.Method)
@@ -144,8 +143,7 @@ func TestSessionTimeout(t *testing.T) {
 
 	s := NewSession()
 	s.SetTimeout(100 * time.Millisecond)
-	resp := s.Get(ts.URL, nil)
-	if resp.Error == nil {
+	if _, err := s.Get(ts.URL, nil); err == nil {
 		t.Fatal("gave nil error; want error")
 	}
 }

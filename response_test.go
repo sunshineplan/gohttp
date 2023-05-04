@@ -19,11 +19,7 @@ func (errReader) Read(p []byte) (n int, err error) {
 func (errReader) Close() error { return nil }
 
 func TestBytes(t *testing.T) {
-	r := &Response{Error: errors.New("test")}
-	if b := r.Bytes(); b != nil {
-		t.Error("gave non nil bytes; want nil")
-	}
-	r = &Response{Response: &http.Response{Body: errReader(0)}}
+	r := &Response{Response: &http.Response{Body: errReader(0)}}
 	if b := r.Bytes(); b != nil {
 		t.Error("gave non nil bytes; want nil")
 	}
@@ -69,12 +65,7 @@ func TestBytes(t *testing.T) {
 }
 
 func TestJSON(t *testing.T) {
-	r := buildResponse(nil, errors.New("test"))
-	if err := r.JSON(nil); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	r = &Response{
+	r := &Response{
 		Response: &http.Response{Body: io.NopCloser(bytes.NewReader([]byte("-1")))},
 	}
 	var data uint
@@ -91,12 +82,7 @@ func TestJSON(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	r := buildResponse(nil, errors.New("test"))
-	if _, err := r.Save("error"); err == nil {
-		t.Error("gave nil error; want error")
-	}
-
-	r = &Response{
+	r := &Response{
 		Response: &http.Response{Body: io.NopCloser(bytes.NewBufferString("test"))},
 	}
 	if _, err := r.Save(""); err == nil {

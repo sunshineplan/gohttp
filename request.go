@@ -41,10 +41,10 @@ func buildRequest(ctx context.Context, method, reqURL string, data any) (*http.R
 	return req, nil
 }
 
-func doRequest(ctx context.Context, method, url string, header http.Header, data any, client *http.Client) *Response {
+func doRequest(ctx context.Context, method, url string, header http.Header, data any, client *http.Client) (*Response, error) {
 	req, err := buildRequest(ctx, method, url, data)
 	if err != nil {
-		return &Response{Response: new(http.Response), Error: err}
+		return nil, err
 	}
 
 	for k, v := range defaultHeaders() {
@@ -55,5 +55,9 @@ func doRequest(ctx context.Context, method, url string, header http.Header, data
 		req.Header[k] = v
 	}
 
-	return buildResponse(client.Do(req))
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return &Response{Response: resp}, nil
 }
