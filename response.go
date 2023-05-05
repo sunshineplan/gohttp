@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -37,6 +38,7 @@ func buildResponse(resp *http.Response) (*Response, error) {
 		var err error
 		reader, err = gzip.NewReader(reader)
 		if err != nil {
+			resp.Body.Close()
 			return nil, err
 		}
 	case "deflate":
@@ -48,6 +50,7 @@ func buildResponse(resp *http.Response) (*Response, error) {
 		if err == io.EOF {
 			body = reader
 		} else {
+			resp.Body.Close()
 			return nil, err
 		}
 	}
@@ -64,7 +67,15 @@ func buildResponse(resp *http.Response) (*Response, error) {
 
 // Read reads the response body.
 func (r *Response) Read(p []byte) (int, error) {
-	return r.body.Read(p)
+	if r.cached {
+		return 0, errors.New("the entire response body has already been read")
+	}
+	n, err := r.body.Read(p)
+	if err == io.EOF {
+		r.cached = true
+		r.Close()
+	}
+	return n, err
 }
 
 // Close closes the response body.
@@ -92,13 +103,9 @@ func (r *Response) Bytes() []byte {
 	if r.cached {
 		return r.buf.Bytes()
 	}
-	defer r.Close()
-
 	if _, err := io.ReadAll(r); err != nil {
 		return nil
 	}
-	r.cached = true
-
 	return r.buf.Bytes()
 }
 
