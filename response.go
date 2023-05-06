@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 
@@ -44,20 +45,24 @@ func buildResponse(resp *http.Response) (*Response, error) {
 	case "deflate":
 		reader = flate.NewReader(reader)
 	}
-	buf := new(bytes.Buffer)
-	body, err := charset.NewReader(reader, resp.Header.Get("Content-Type"))
-	if err != nil {
-		if err == io.EOF {
-			body = reader
-		} else {
+	contentType := resp.Header.Get("Content-Type")
+	_, params, _ := mime.ParseMediaType(contentType)
+	if _, ok := params["charset"]; ok {
+		r, err := charset.NewReader(reader, contentType)
+		switch err {
+		case nil:
+			reader = r
+		case io.EOF:
+		default:
 			resp.Body.Close()
 			return nil, err
 		}
 	}
-	body = io.TeeReader(body, buf)
+	buf := new(bytes.Buffer)
+	reader = io.TeeReader(reader, buf)
 	return &Response{
 		resp:          resp,
-		body:          body,
+		body:          reader,
 		StatusCode:    resp.StatusCode,
 		Header:        resp.Header,
 		ContentLength: resp.ContentLength,

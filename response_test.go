@@ -19,8 +19,12 @@ func (errReader) Read(p []byte) (n int, err error) {
 func (errReader) Close() error { return nil }
 
 func TestBytes(t *testing.T) {
-	if _, err := buildResponse(&http.Response{Body: errReader(0)}); err == nil {
-		t.Error("gave nil error; want test error")
+	r, err := buildResponse(&http.Response{Body: errReader(0)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b := r.Bytes(); b != nil {
+		t.Error("gave non nil bytes; want nil")
 	}
 	if _, err := buildResponse(&http.Response{
 		Header: http.Header{"Content-Encoding": []string{"gzip"}},
@@ -33,7 +37,7 @@ func TestBytes(t *testing.T) {
 	zw := gzip.NewWriter(&buf)
 	zw.Write([]byte("test"))
 	zw.Close()
-	r, err := buildResponse(&http.Response{
+	r, err = buildResponse(&http.Response{
 		Header: http.Header{"Content-Encoding": []string{"gzip"}},
 		Body:   io.NopCloser(&buf),
 	})
@@ -69,8 +73,12 @@ func TestJSON(t *testing.T) {
 		t.Error("gave nil error; want error")
 	}
 
-	if _, err := buildResponse(&http.Response{Body: errReader(0)}); err == nil {
-		t.Error("gave nil error; want test error")
+	r, err = buildResponse(&http.Response{Body: errReader(0)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := r.JSON(nil); err == nil {
+		t.Error("gave nil error; want error")
 	}
 }
 
