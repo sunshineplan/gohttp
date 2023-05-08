@@ -46,8 +46,8 @@ func buildResponse(resp *http.Response) (*Response, error) {
 		reader = flate.NewReader(reader)
 	}
 	contentType := resp.Header.Get("Content-Type")
-	_, params, _ := mime.ParseMediaType(contentType)
-	if _, ok := params["charset"]; ok {
+	mediatype, params, _ := mime.ParseMediaType(contentType)
+	if _, ok := params["charset"]; mediatype == "text/html" || ok {
 		r, err := charset.NewReader(reader, contentType)
 		switch err {
 		case nil:
