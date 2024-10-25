@@ -55,6 +55,11 @@ func SetClient(c *http.Client) {
 	defaultSession.SetClient(c)
 }
 
+// Do sends an HTTP request and returns a response.
+func Do(req *http.Request) (*Response, error) {
+	return defaultSession.Do(req)
+}
+
 // Get issues a GET to the specified URL with headers.
 func Get(url string, headers H) (*Response, error) {
 	return defaultSession.Get(url, headers)
@@ -97,6 +102,27 @@ func UploadWithContext(ctx context.Context, url string, headers H, params map[st
 	return defaultSession.UploadWithContext(ctx, url, headers, params, files...)
 }
 
+// Do sends a session HTTP request and returns a response.
+func (s *Session) Do(req *http.Request) (*Response, error) {
+	req = req.Clone(req.Context())
+	header := make(http.Header)
+	for k, v := range defaultHeaders() {
+		header.Set(k, v)
+	}
+	for k, v := range s.Header {
+		header[k] = v
+	}
+	for k, v := range req.Header {
+		header[k] = v
+	}
+	req.Header = header
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return buildResponse(resp)
+}
+
 // Get issues a session GET to the specified URL with additional headers.
 func (s *Session) Get(url string, headers H) (*Response, error) {
 	return s.GetWithContext(context.Background(), url, headers)
@@ -104,14 +130,14 @@ func (s *Session) Get(url string, headers H) (*Response, error) {
 
 // GetWithContext issues a session GET to the specified URL with context and additional headers.
 func (s *Session) GetWithContext(ctx context.Context, url string, headers H) (*Response, error) {
-	h := s.Header.Clone()
+	req, err := newRequest(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
 	for k, v := range headers {
-		h.Set(k, v)
+		req.Header.Set(k, v)
 	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return doRequest(ctx, "GET", url, h, nil, s.Client)
+	return s.Do(req)
 }
 
 // Head issues a session HEAD to the specified URL with additional headers.
@@ -121,14 +147,14 @@ func (s *Session) Head(url string, headers H) (*Response, error) {
 
 // HeadWithContext issues a session HEAD to the specified URL with context and additional headers.
 func (s *Session) HeadWithContext(ctx context.Context, url string, headers H) (*Response, error) {
-	h := s.Header.Clone()
+	req, err := newRequest(ctx, "HEAD", url, nil)
+	if err != nil {
+		return nil, err
+	}
 	for k, v := range headers {
-		h.Set(k, v)
+		req.Header.Set(k, v)
 	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return doRequest(ctx, "HEAD", url, h, nil, s.Client)
+	return s.Do(req)
 }
 
 // Post issues a session POST to the specified URL with additional headers.
@@ -138,14 +164,14 @@ func (s *Session) Post(url string, headers H, data any) (*Response, error) {
 
 // PostWithContext issues a session POST to the specified URL with context and additional headers.
 func (s *Session) PostWithContext(ctx context.Context, url string, headers H, data any) (*Response, error) {
-	h := s.Header.Clone()
+	req, err := newRequest(ctx, "POST", url, data)
+	if err != nil {
+		return nil, err
+	}
 	for k, v := range headers {
-		h.Set(k, v)
+		req.Header.Set(k, v)
 	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return doRequest(ctx, "POST", url, h, data, s.Client)
+	return s.Do(req)
 }
 
 // Upload issues a session POST to the specified URL with a multipart document and additional headers.
@@ -159,15 +185,15 @@ func (s *Session) UploadWithContext(ctx context.Context, url string, headers H, 
 	if err != nil {
 		return nil, err
 	}
-	h := s.Header.Clone()
-	h.Set("Content-Type", contentType)
+	req, err := newRequest(ctx, "POST", url, data)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
 	for k, v := range headers {
-		h.Set(k, v)
+		req.Header.Set(k, v)
 	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return doRequest(ctx, "POST", url, h, data, s.Client)
+	return s.Do(req)
 }
 
 // KeepAlive repeatedly calls fn with a fixed interval delay between each call.

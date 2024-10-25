@@ -13,7 +13,7 @@ var _ http.CookieJar = &Session{}
 
 // Session provides cookie persistence and configuration.
 type Session struct {
-	*http.Client
+	client *http.Client
 	Header http.Header
 }
 
@@ -23,20 +23,20 @@ func newSession(client *http.Client) *Session {
 
 // NewSession creates and initializes a new Session using initial contents.
 func NewSession() *Session {
-	client := *defaultSession.Client
-	client.Jar, _ = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	return newSession(&client)
+	c := new(http.Client)
+	c.Jar, _ = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	return newSession(c)
 }
 
 func (s *Session) setProxy(fn func(*http.Request) (*url.URL, error)) {
 	var tr *http.Transport
 	var ok bool
-	if s.Transport == nil {
+	if s.client.Transport == nil {
 		if tr, ok = http.DefaultTransport.(*http.Transport); ok {
 			tr.Proxy = fn
 		}
 	} else {
-		if tr, ok = s.Transport.(*http.Transport); ok {
+		if tr, ok = s.client.Transport.(*http.Transport); ok {
 			tr.Proxy = fn
 		}
 	}
@@ -69,17 +69,17 @@ func (s *Session) SetProxyFromEnvironment() {
 
 // SetTimeout sets Session client timeout. Zero means no timeout.
 func (s *Session) SetTimeout(d time.Duration) {
-	s.Timeout = d
+	s.client.Timeout = d
 }
 
 // SetClient sets default client.
 func (s *Session) SetClient(c *http.Client) {
-	s.Client = c
+	s.client = c
 }
 
 // Cookies returns the cookies to send in a request for the given URL.
 func (s *Session) Cookies(u *url.URL) []*http.Cookie {
-	return s.Jar.Cookies(u)
+	return s.client.Jar.Cookies(u)
 }
 
 // SetCookie handles the receipt of the cookie in a reply for the given URL.
@@ -89,5 +89,5 @@ func (s *Session) SetCookie(u *url.URL, name, value string) {
 
 // SetCookies handles the receipt of the cookies in a reply for the given URL.
 func (s *Session) SetCookies(u *url.URL, cookies []*http.Cookie) {
-	s.Jar.SetCookies(u, cookies)
+	s.client.Jar.SetCookies(u, cookies)
 }
