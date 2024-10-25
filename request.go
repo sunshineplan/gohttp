@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func buildRequest(ctx context.Context, method, reqURL string, data any) (*http.Request, error) {
+func newRequest(ctx context.Context, method, reqURL string, data any) (*http.Request, error) {
 	var body io.Reader
 	var contentType string
 
@@ -39,25 +39,4 @@ func buildRequest(ctx context.Context, method, reqURL string, data any) (*http.R
 	}
 
 	return req, nil
-}
-
-func doRequest(ctx context.Context, method, url string, header http.Header, data any, client *http.Client) (*Response, error) {
-	req, err := buildRequest(ctx, method, url, data)
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range defaultHeaders() {
-		req.Header.Set(k, v)
-	}
-
-	for k, v := range header {
-		req.Header[k] = v
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return buildResponse(resp)
 }
