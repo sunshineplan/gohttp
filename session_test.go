@@ -25,6 +25,7 @@ func TestSession(t *testing.T) {
 	tsURL, _ := url.Parse(ts.URL)
 
 	s := NewSession()
+	s.SetDebug(os.Stdout, true, true)
 	s.Header.Set("hello", "world")
 	s.SetCookie(tsURL, "one", "first")
 	s.SetCookie(tsURL, "two", "second")

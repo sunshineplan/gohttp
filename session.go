@@ -1,6 +1,7 @@
 package gohttp
 
 import (
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -28,21 +29,32 @@ func NewSession() *Session {
 	return newSession(c)
 }
 
+func (s *Session) SetDebug(w io.Writer, reqBody, respBody bool) {
+	if w != nil {
+		s.client.Transport = &debugger{s.client.Transport, w, reqBody, respBody}
+	} else if t, ok := s.client.Transport.(*debugger); ok {
+		s.client.Transport = t.rt
+	}
+}
+
 func (s *Session) setProxy(fn func(*http.Request) (*url.URL, error)) {
-	var tr *http.Transport
-	var ok bool
 	if s.client.Transport == nil {
-		if tr, ok = http.DefaultTransport.(*http.Transport); ok {
-			tr.Proxy = fn
+		if t, ok := http.DefaultTransport.(*http.Transport); ok {
+			t.Proxy = fn
+			return
 		}
 	} else {
-		if tr, ok = s.client.Transport.(*http.Transport); ok {
-			tr.Proxy = fn
+		if t, ok := s.client.Transport.(*http.Transport); ok {
+			t.Proxy = fn
+			return
+		} else if t, ok := s.client.Transport.(*debugger); ok {
+			if t, ok := t.rt.(*http.Transport); ok {
+				t.Proxy = fn
+				return
+			}
 		}
 	}
-	if !ok {
-		panic("Transport is not *http.Transport type")
-	}
+	panic("Transport is not *http.Transport type")
 }
 
 // SetProxy sets Session client transport proxy.
