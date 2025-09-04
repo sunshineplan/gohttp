@@ -2,6 +2,7 @@ package gohttp
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"time"
 )
@@ -28,6 +29,10 @@ func SetAgent(agent string) {
 	if agent != "" {
 		defaultAgent = agent
 	}
+}
+
+func SetDebug(w io.Writer, reqBody, respBody bool) {
+	defaultSession.SetDebug(w, reqBody, respBody)
 }
 
 // SetProxy sets default client transport proxy.
