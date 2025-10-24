@@ -23,6 +23,7 @@ func (t *debugger) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	t.Write("-> ", reqBody)
 	res, err := t.rt.RoundTrip(req)
 	if err != nil {
 		return nil, err
@@ -31,7 +32,6 @@ func (t *debugger) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Write("-> ", reqBody)
 	t.Write("<- ", respBody)
 	return res, nil
 }
